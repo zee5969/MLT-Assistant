@@ -34,6 +34,28 @@ st.sidebar.title("Zeeshan Ali")
 st.sidebar.write("🏥 Medical Lab Technology Student")
 st.sidebar.write("🎓 Riphah International University")
 st.sidebar.markdown("---")
+st.sidebar.markdown("---")
+st.sidebar.write("⭐ Give Us Feedback!")
+st.sidebar.markdown(
+    """
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSdFPi-G7vvQmojacHAh1GXs1kjWcAtgp3M1x-XGHuYW_DEkQA/viewform?usp=header" 
+    target="_blank">
+    <button style="
+        background-color: #0083B8;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        width: 100%;
+        font-size: 16px;
+    ">
+    📝 Give Feedback!
+    </button>
+    </a>
+    """,
+    unsafe_allow_html=True
+)
 
 # What Bot Can Help With
 st.sidebar.write("### 🔬 I can help with:")
