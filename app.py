@@ -19,21 +19,28 @@ hide_style = """
 """
 st.markdown(hide_style, unsafe_allow_html=True)
 
-# Round Picture Style
-st.sidebar.markdown("""
-    <style>
-    [data-testid="stSidebar"] img {
-        border-radius: 50%;
-        border: 3px solid #ffffff;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
 # Sidebar Profile
 st.sidebar.title("Zeeshan Ali")
 st.sidebar.write("🏥 Medical Lab Technology Student")
-st.sidebar.write("🎓 Riphah International University")
 st.sidebar.markdown("---")
+st.sidebar.write("### 🔬 I can help with:")
+st.sidebar.write("✅ Lab Test Questions")
+st.sidebar.write("✅ Medical Terms")
+st.sidebar.write("✅ MLT Study Help")
+st.sidebar.write("✅ Health Questions")
+st.sidebar.write("✅ Medicine Information")
+st.sidebar.markdown("---")
+st.sidebar.write("📎 Upload File")
+uploaded_file = st.sidebar.file_uploader(
+    "Choose a file",
+    type=["txt", "pdf", "png", "jpg", "jpeg"],
+    label_visibility="collapsed"
+)
+if uploaded_file is not None:
+    st.sidebar.success(f"✅ {uploaded_file.name}")
+    if uploaded_file.type.startswith("image"):
+        st.sidebar.image(uploaded_file, width=150)
+
 st.sidebar.markdown("---")
 st.sidebar.write("⭐ Give Us Feedback!")
 st.sidebar.markdown(
@@ -57,28 +64,6 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
-# What Bot Can Help With
-st.sidebar.write("### 🔬 I can help with:")
-st.sidebar.write("✅ Lab Test Questions")
-st.sidebar.write("✅ Medical Terms")
-st.sidebar.write("✅ MLT Study Help")
-st.sidebar.write("✅ Health Questions")
-st.sidebar.write("✅ Medicine Info")
-st.sidebar.markdown("---")
-
-# Upload File
-st.sidebar.write("📎 Upload File")
-uploaded_file = st.sidebar.file_uploader(
-    "Choose a file",
-    type=["txt", "pdf", "png", "jpg", "jpeg"],
-    label_visibility="collapsed"
-)
-
-if uploaded_file is not None:
-    st.sidebar.success(f"✅ {uploaded_file.name}")
-    if uploaded_file.type.startswith("image"):
-        st.sidebar.image(uploaded_file, width=150)
-
 # Medical AI Personality
 medical_prompt = """
 You are a Medical AI Assistant specialized in:
@@ -101,22 +86,48 @@ Important rules:
 - Be friendly and helpful
 """
 
-# Main Chatbot
+# Main Page
 st.title("🔬 MLT Medical AI Assistant")
+
+# Info visible on mobile
+st.write("👨‍⚕️ **Created by Zeeshan Ali**")
+st.write("🏥 MLT Student - Riphah International University Islamabad")
+
+st.markdown("---")
+
+# Feedback button visible on mobile
+st.markdown(
+    """
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSdFPi-G7vvQmojacHAh1GXs1kjWcAtgp3M1x-XGHuYW_DEkQA/viewform?usp=header" 
+    target="_blank">
+    <button style="
+        background-color: #0083B8;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+    ">
+    📝 Give Feedback!
+    </button>
+    </a>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown("---")
 st.write("Ask me anything about medicine and health!")
 
 # Quick Question Buttons
 st.write("### Quick Questions:")
 col1, col2, col3 = st.columns(3)
-
 with col1:
-    if st.button("🔬 What is CBC?"):
+    if st.button("🔬 CBC?"):
         st.session_state.quick = "What is CBC blood test?"
-
 with col2:
-    if st.button("💊 Common medicines"):
+    if st.button("💊 Medicines"):
         st.session_state.quick = "Tell me about common medicines"
-
 with col3:
     if st.button("🧪 Lab tests"):
         st.session_state.quick = "What are common lab tests?"
@@ -129,7 +140,6 @@ if "messages" not in st.session_state:
 if "quick" not in st.session_state:
     st.session_state.quick = None
 
-# Handle quick questions
 if st.session_state.quick:
     quick_q = st.session_state.quick
     st.session_state.quick = None
@@ -160,12 +170,10 @@ if st.session_state.quick:
         "content": ai_reply
     })
 
-# Show chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
 
-# Chat Input
 user_input = st.chat_input("Ask your medical question here...")
 
 if user_input:
