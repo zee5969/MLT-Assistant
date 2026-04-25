@@ -206,7 +206,7 @@ st.markdown("""
         <p style="font-size: 18px;">
         Your Personal Medical Guide - Available 24/7
         </p>
-        <p>Created by Zeeshan Ali | Riphah University Islamabad 🇵🇰</p>
+        <p>Created by Zeeshan Ali | Riphah University Islamabad </p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -568,6 +568,5 @@ st.markdown("""
         <p>Always consult a real doctor 
         for medical advice!</p>
         <p>Created with ❤️ by Zeeshan Ali | 
-        Riphah University Islamabad 🇵🇰</p>
     </div>
 """, unsafe_allow_html=True)
