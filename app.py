@@ -30,11 +30,9 @@ st.sidebar.markdown("""
 """, unsafe_allow_html=True)
 
 # Sidebar Profile
-st.sidebar.image("https://avatars.githubusercontent.com/zee5969", width=100)
 st.sidebar.title("Zeeshan Ali")
 st.sidebar.write("🏥 Medical Lab Technology Student")
 st.sidebar.write("🎓 Riphah International University")
-st.sidebar.write("📍 Islamabad, Pakistan")
 st.sidebar.markdown("---")
 
 # What Bot Can Help With
@@ -79,8 +77,6 @@ Important rules:
 - Always recommend consulting a real doctor
   for serious medical issues
 - Be friendly and helpful
-- If asked non medical questions
-  answer them too but focus on medical topics
 """
 
 # Main Chatbot
@@ -126,8 +122,10 @@ if st.session_state.quick:
 
     response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
-        messages=st.session_state.messages,
-        system=medical_prompt
+        messages=[
+            {"role": "system", "content": medical_prompt},
+            *st.session_state.messages
+        ]
     )
 
     ai_reply = response.choices[0].message.content
@@ -159,8 +157,10 @@ if user_input:
 
     response = client.chat.completions.create(
         model="llama-3.1-8b-instant",
-        messages=st.session_state.messages,
-        system=medical_prompt
+        messages=[
+            {"role": "system", "content": medical_prompt},
+            *st.session_state.messages
+        ]
     )
 
     ai_reply = response.choices[0].message.content
