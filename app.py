@@ -6,7 +6,6 @@ client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 st.set_page_config(
     page_title="MLT Medical AI Assistant",
-    page_icon="🔬",
     layout="wide"
 )
 
@@ -567,6 +566,5 @@ st.markdown("""
         <p>⚠️ This AI is for information only!</p>
         <p>Always consult a real doctor 
         for medical advice!</p>
-        <p>Created with ❤️ by Zeeshan Ali | 
     </div>
 """, unsafe_allow_html=True)
