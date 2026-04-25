@@ -6,6 +6,7 @@ client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 st.set_page_config(
     page_title="MLT Medical AI Assistant",
+    page_icon="🔬",
     layout="wide"
 )
 
@@ -16,9 +17,8 @@ hide_style = """
     footer {visibility: hidden;}
     header {visibility: hidden;}
 
-    /* Beautiful button style */
     .stButton button {
-        background-color: #0083B8;
+        background-color: #11998e;
         color: white;
         border-radius: 10px;
         border: none;
@@ -27,7 +27,32 @@ hide_style = """
         width: 100%;
     }
 
-    /* Chat message style */
+    .stButton button:hover {
+        background-color: #38ef7d;
+        color: black;
+    }
+
+    [data-testid="stSidebar"] {
+        background-color: #0d4f47;
+        color: white;
+    }
+
+    [data-testid="stSidebar"] p {
+        color: white;
+    }
+
+    [data-testid="stSidebar"] h1 {
+        color: white;
+    }
+
+    [data-testid="stSidebar"] h2 {
+        color: white;
+    }
+
+    [data-testid="stSidebar"] h3 {
+        color: white;
+    }
+
     .stChatMessage {
         border-radius: 15px;
         padding: 10px;
@@ -40,25 +65,66 @@ st.markdown(hide_style, unsafe_allow_html=True)
 # SIDEBAR
 # ============================================
 
-st.sidebar.title("Zeeshan Ali")
-st.sidebar.write("🏥 Medical Lab Technology Student")
-st.sidebar.write("🎓 Riphah International University")
+st.sidebar.markdown(
+    "<h2 style='color:white'>Zeeshan Ali</h2>",
+    unsafe_allow_html=True
+)
+st.sidebar.markdown(
+    "<p style='color:white'>🏥 Medical Lab Technology Student</p>",
+    unsafe_allow_html=True
+)
+st.sidebar.markdown(
+    "<p style='color:white'>🎓 Riphah International University</p>",
+    unsafe_allow_html=True
+)
 st.sidebar.markdown("---")
 
-st.sidebar.write("### 🔬 I can help with:")
-st.sidebar.write("✅ Lab Test Questions")
-st.sidebar.write("✅ Symptom Checking")
-st.sidebar.write("✅ Lab Report Analysis")
-st.sidebar.write("✅ Medical Terms")
-st.sidebar.write("✅ MLT Study Help")
-st.sidebar.write("✅ Health Questions")
-st.sidebar.write("✅ Medicine Info")
-st.sidebar.write("✅ Diet Advice")
-st.sidebar.write("✅ First Aid Help")
+st.sidebar.markdown(
+    "<h3 style='color:white'>🔬 I can help with:</h3>",
+    unsafe_allow_html=True
+)
+st.sidebar.markdown(
+    "<p style='color:white'>✅ Lab Test Questions</p>",
+    unsafe_allow_html=True
+)
+st.sidebar.markdown(
+    "<p style='color:white'>✅ Symptom Checking</p>",
+    unsafe_allow_html=True
+)
+st.sidebar.markdown(
+    "<p style='color:white'>✅ Lab Report Analysis</p>",
+    unsafe_allow_html=True
+)
+st.sidebar.markdown(
+    "<p style='color:white'>✅ Medical Terms</p>",
+    unsafe_allow_html=True
+)
+st.sidebar.markdown(
+    "<p style='color:white'>✅ MLT Study Help</p>",
+    unsafe_allow_html=True
+)
+st.sidebar.markdown(
+    "<p style='color:white'>✅ Health Questions</p>",
+    unsafe_allow_html=True
+)
+st.sidebar.markdown(
+    "<p style='color:white'>✅ Medicine Info</p>",
+    unsafe_allow_html=True
+)
+st.sidebar.markdown(
+    "<p style='color:white'>✅ Diet Advice</p>",
+    unsafe_allow_html=True
+)
+st.sidebar.markdown(
+    "<p style='color:white'>✅ First Aid Help</p>",
+    unsafe_allow_html=True
+)
 st.sidebar.markdown("---")
 
-# Normal Values Reference in Sidebar
-st.sidebar.write("### 📊 Normal Values!")
+st.sidebar.markdown(
+    "<h3 style='color:white'>📊 Normal Values!</h3>",
+    unsafe_allow_html=True
+)
 st.sidebar.info("""
 🩸 Blood Sugar
 Normal: 70-100 mg/dL
@@ -84,8 +150,10 @@ Athletes: 40-60/min
 """)
 st.sidebar.markdown("---")
 
-# Upload File
-st.sidebar.write("📎 Upload Medical Report")
+st.sidebar.markdown(
+    "<p style='color:white'>📎 Upload Medical Report</p>",
+    unsafe_allow_html=True
+)
 uploaded_file = st.sidebar.file_uploader(
     "Choose a file",
     type=["txt", "pdf", "png", "jpg", "jpeg"],
@@ -97,13 +165,16 @@ if uploaded_file is not None:
         st.sidebar.image(uploaded_file, width=150)
 
 st.sidebar.markdown("---")
-st.sidebar.write("⭐ Give Us Feedback!")
+st.sidebar.markdown(
+    "<p style='color:white'>⭐ Give Us Feedback!</p>",
+    unsafe_allow_html=True
+)
 st.sidebar.markdown(
     """
     <a href="https://docs.google.com/forms/d/e/1FAIpQLSdFPi-G7vvQmojacHAh1GXs1kjWcAtgp3M1x-XGHuYW_DEkQA/viewform?usp=header" 
     target="_blank">
     <button style="
-        background-color: #0083B8;
+        background-color: #11998e;
         color: white;
         padding: 10px 20px;
         border: none;
@@ -120,7 +191,7 @@ st.sidebar.markdown(
 )
 
 # ============================================
-# ADVANCED MEDICAL AI PERSONALITY
+# MEDICAL AI PERSONALITY
 # ============================================
 
 medical_prompt = """
@@ -173,13 +244,11 @@ You are specialized in:
 
 Important Rules:
 - Always recommend seeing real doctor
-  for serious conditions
 - Give accurate medical information
 - Use simple easy language
-- Mix Urdu and English when helpful
-- Be friendly and caring like a doctor
-- Ask followup questions to understand better
-- Give detailed and helpful explanations
+- Be friendly and caring
+- Ask followup questions
+- Give detailed explanations
 - Always end with encouragement
 """
 
@@ -187,13 +256,13 @@ Important Rules:
 # MAIN PAGE
 # ============================================
 
-# Beautiful Header
+# Beautiful Green Header
 st.markdown("""
     <div style="
         background: linear-gradient(
             to right,
-            #0083B8,
-            #00B4DB
+            #11998e,
+            #38ef7d
         );
         padding: 20px;
         border-radius: 10px;
@@ -201,7 +270,7 @@ st.markdown("""
         color: white;
         margin-bottom: 20px;
     ">
-        <h1>🔬 MLT Medical AI Assistant</h1>
+        <h1>MLT Medical AI Assistant</h1>
         <p style="font-size: 18px;">
         Your Personal Medical Guide - Available 24/7
         </p>
@@ -215,7 +284,7 @@ st.markdown(
     <a href="https://docs.google.com/forms/d/e/1FAIpQLSdFPi-G7vvQmojacHAh1GXs1kjWcAtgp3M1x-XGHuYW_DEkQA/viewform?usp=header" 
     target="_blank">
     <button style="
-        background-color: #0083B8;
+        background-color: #11998e;
         color: white;
         padding: 8px 15px;
         border: none;
@@ -237,7 +306,11 @@ st.markdown("---")
 # PATIENT INFORMATION
 # ============================================
 
-st.write("### 👤 Tell Us About Yourself!")
+st.markdown("""
+    <h3 style='color:#11998e'>
+    👤 Tell Us About Yourself!
+    </h3>
+""", unsafe_allow_html=True)
 st.write("This helps us give better advice!")
 
 col1, col2, col3 = st.columns(3)
@@ -267,15 +340,19 @@ with col3:
 st.markdown("---")
 
 # ============================================
-# NORMAL VALUES CARDS - Mobile Visible
+# NORMAL VALUES CARDS
 # ============================================
 
-st.write("### 📊 Quick Reference - Normal Values!")
+st.markdown("""
+    <h3 style='color:#11998e'>
+    📊 Quick Reference - Normal Values!
+    </h3>
+""", unsafe_allow_html=True)
 
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.info("""
+    st.success("""
     🩸 **Blood Sugar**
     Normal: 70-100
     Pre-diabetes: 100-125
@@ -283,7 +360,7 @@ with col1:
     """)
 
 with col2:
-    st.info("""
+    st.success("""
     ❤️ **Blood Pressure**
     Normal: 120/80
     High: 140/90+
@@ -291,7 +368,7 @@ with col2:
     """)
 
 with col3:
-    st.info("""
+    st.success("""
     🔬 **Hemoglobin**
     Men: 13.5-17.5
     Women: 12-15.5
@@ -299,7 +376,7 @@ with col3:
     """)
 
 with col4:
-    st.info("""
+    st.success("""
     🫀 **Pulse Rate**
     Normal: 60-100
     Athletes: 40-60
@@ -312,7 +389,11 @@ st.markdown("---")
 # SYMPTOM CHECKER
 # ============================================
 
-st.write("### 🤒 Symptom Checker!")
+st.markdown("""
+    <h3 style='color:#11998e'>
+    🤒 Symptom Checker!
+    </h3>
+""", unsafe_allow_html=True)
 st.write("Select your symptoms and we will help!")
 
 symptoms = st.multiselect(
@@ -347,9 +428,9 @@ if st.button("🔍 Check My Symptoms!"):
         patient_info = ""
         if gender != "Select":
             patient_info = f"Patient is {age} years old {gender} weighing {weight}kg. "
-        
+
         message = f"{patient_info}I have these symptoms: {symptom_text}. What could be wrong and what should I do?"
-        
+
         st.session_state.messages.append({
             "role": "user",
             "content": message
@@ -363,7 +444,11 @@ st.markdown("---")
 # LAB REPORT ANALYZER
 # ============================================
 
-st.write("### 🔬 Lab Report Analyzer!")
+st.markdown("""
+    <h3 style='color:#11998e'>
+    🔬 Lab Report Analyzer!
+    </h3>
+""", unsafe_allow_html=True)
 st.write("Enter your test results and we will explain them!")
 
 with st.expander("📋 Click to Enter Your Lab Results!"):
@@ -426,43 +511,47 @@ st.markdown("---")
 # QUICK QUESTIONS
 # ============================================
 
-st.write("### ⚡ Quick Questions!")
+st.markdown("""
+    <h3 style='color:#11998e'>
+    ⚡ Quick Questions!
+    </h3>
+""", unsafe_allow_html=True)
 
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
     if st.button("🔬 What is CBC?"):
-        st.session_state.quick = "What is CBC blood test and what does it show?"
+        st.session_state.quick = "What is CBC blood test?"
 
 with col2:
     if st.button("🩸 Blood Sugar"):
-        st.session_state.quick = "Explain blood sugar tests and normal ranges"
+        st.session_state.quick = "Explain blood sugar tests"
 
 with col3:
     if st.button("❤️ Blood Pressure"):
-        st.session_state.quick = "Explain blood pressure and what is normal"
+        st.session_state.quick = "Explain blood pressure"
 
 with col4:
-    if st.button("💊 Common Medicines"):
-        st.session_state.quick = "Tell me about common medicines used in Pakistan"
+    if st.button("💊 Medicines"):
+        st.session_state.quick = "Common medicines in Pakistan"
 
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
     if st.button("🦠 Anemia Info"):
-        st.session_state.quick = "What is anemia and how to treat it?"
+        st.session_state.quick = "What is anemia?"
 
 with col2:
     if st.button("🍎 Healthy Diet"):
-        st.session_state.quick = "Give me healthy diet advice for Pakistanis"
+        st.session_state.quick = "Healthy diet advice"
 
 with col3:
-    if st.button("🏥 When See Doctor"):
-        st.session_state.quick = "When should I immediately see a doctor?"
+    if st.button("🏥 See Doctor?"):
+        st.session_state.quick = "When to see a doctor immediately?"
 
 with col4:
     if st.button("🧪 Urine Test"):
-        st.session_state.quick = "Explain urine test and what it shows"
+        st.session_state.quick = "Explain urine test"
 
 st.markdown("---")
 
@@ -470,7 +559,11 @@ st.markdown("---")
 # CHAT SECTION
 # ============================================
 
-st.write("### 💬 Chat With Medical AI!")
+st.markdown("""
+    <h3 style='color:#11998e'>
+    💬 Chat With Medical AI!
+    </h3>
+""", unsafe_allow_html=True)
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -478,7 +571,6 @@ if "messages" not in st.session_state:
 if "quick" not in st.session_state:
     st.session_state.quick = None
 
-# Handle quick questions
 if st.session_state.quick:
     quick_q = st.session_state.quick
     st.session_state.quick = None
@@ -509,12 +601,10 @@ if st.session_state.quick:
         "content": ai_reply
     })
 
-# Show chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
 
-# Chat Input
 user_input = st.chat_input(
     "Ask your medical question here... 🏥"
 )
@@ -525,7 +615,7 @@ if user_input:
 
     patient_context = ""
     if gender != "Select":
-        patient_context = f"Note: Patient is {age} years old {gender} weighing {weight}kg. "
+        patient_context = f"Patient is {age} years old {gender} weighing {weight}kg. "
 
     full_message = patient_context + user_input
 
@@ -562,9 +652,15 @@ st.markdown("""
         text-align: center;
         color: gray;
         padding: 10px;
+        background: linear-gradient(
+            to right,
+            #11998e,
+            #38ef7d
+        );
+        border-radius: 10px;
+        color: white;
     ">
         <p>⚠️ This AI is for information only!</p>
-        <p>Always consult a real doctor 
-        for medical advice!</p>
+        <p>Always consult a real doctor!</p>
     </div>
 """, unsafe_allow_html=True)
