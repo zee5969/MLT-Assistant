@@ -274,7 +274,7 @@ st.markdown("""
         <p style="font-size: 18px;">
         Your Personal Medical Guide - Available 24/7
         </p>
-        <p>Created by Zeeshan Ali | Riphah University Islamabad </p>
+        <p>Created by Zeeshan Ali | Riphah International University Islamabad </p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -508,54 +508,6 @@ with st.expander("📋 Click to Enter Your Lab Results!"):
 st.markdown("---")
 
 # ============================================
-# QUICK QUESTIONS
-# ============================================
-
-st.markdown("""
-    <h3 style='color:#11998e'>
-    ⚡ Quick Questions!
-    </h3>
-""", unsafe_allow_html=True)
-
-col1, col2, col3, col4 = st.columns(4)
-
-with col1:
-    if st.button("🔬 What is CBC?"):
-        st.session_state.quick = "What is CBC blood test?"
-
-with col2:
-    if st.button("🩸 Blood Sugar"):
-        st.session_state.quick = "Explain blood sugar tests"
-
-with col3:
-    if st.button("❤️ Blood Pressure"):
-        st.session_state.quick = "Explain blood pressure"
-
-with col4:
-    if st.button("💊 Medicines"):
-        st.session_state.quick = "Common medicines in Pakistan"
-
-col1, col2, col3, col4 = st.columns(4)
-
-with col1:
-    if st.button("🦠 Anemia Info"):
-        st.session_state.quick = "What is anemia?"
-
-with col2:
-    if st.button("🍎 Healthy Diet"):
-        st.session_state.quick = "Healthy diet advice"
-
-with col3:
-    if st.button("🏥 See Doctor?"):
-        st.session_state.quick = "When to see a doctor immediately?"
-
-with col4:
-    if st.button("🧪 Urine Test"):
-        st.session_state.quick = "Explain urine test"
-
-st.markdown("---")
-
-# ============================================
 # CHAT SECTION
 # ============================================
 
@@ -650,15 +602,8 @@ st.markdown("---")
 st.markdown("""
     <div style="
         text-align: center;
-        color: gray;
+        color: Red;
         padding: 10px;
-        background: linear-gradient(
-            to right,
-            #11998e,
-            #38ef7d
-        );
-        border-radius: 10px;
-        color: white;
     ">
         <p>⚠️ This AI is for information only!</p>
         <p>Always consult a real doctor!</p>
