@@ -17,6 +17,36 @@ hide_style = """
     footer {visibility: hidden;}
     header {visibility: hidden;}
 
+    /* Hide GitHub fork button */
+    .viewerBadge_container__1QSob {
+        display: none !important;
+    }
+
+    /* Hide deploy button */
+    .stDeployButton {
+        display: none !important;
+    }
+
+    /* Hide GitHub logo */
+    [data-testid="stToolbar"] {
+        display: none !important;
+    }
+
+    /* Hide top right buttons */
+    .stAppDeployButton {
+        display: none !important;
+    }
+
+    /* Hide fork button */
+    ._profilePreview_gzau3_63 {
+        display: none !important;
+    }
+
+    /* Hide all top bar */
+    [data-testid="stHeader"] {
+        display: none !important;
+    }
+
     .stButton button {
         background-color: #11998e;
         color: white;
@@ -57,8 +87,7 @@ hide_style = """
         border-radius: 15px;
         padding: 10px;
     }
-    </style>
-"""
+"""    </style>
 st.markdown(hide_style, unsafe_allow_html=True)
 
 # ============================================
