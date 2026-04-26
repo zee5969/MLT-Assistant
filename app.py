@@ -87,7 +87,8 @@ hide_style = """
         border-radius: 15px;
         padding: 10px;
     }
-"""    </style>
+    </style>
+"""
 st.markdown(hide_style, unsafe_allow_html=True)
 
 # ============================================
