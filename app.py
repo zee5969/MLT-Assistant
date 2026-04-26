@@ -196,7 +196,7 @@ st.sidebar.markdown(
 
 medical_prompt = """
 You are an advanced Medical AI Assistant
-created by Zeeshan Ali, an MLT student at
+created by Zeeshan Ali, a Medical Lab Technology student at
 Riphah International University Islamabad.
 
 IMPORTANT RULES:
