@@ -267,14 +267,13 @@ st.markdown("""
         padding: 20px;
         border-radius: 10px;
         text-align: center;
-        color: white;
+        color: Black;
         margin-bottom: 20px;
     ">
         <h1>MLT Medical AI Assistant</h1>
         <p style="font-size: 18px;">
         Your Personal Medical Guide - Available 24/7
         </p>
-        <p>Created by Zeeshan Ali | Riphah International University Islamabad </p>
     </div>
 """, unsafe_allow_html=True)
 
