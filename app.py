@@ -614,7 +614,7 @@ if st.session_state.quick:
     })
 
     response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
+        model="openai/gpt-oss-20b",
         messages=[
             {"role": "system", "content": medical_prompt},
             *st.session_state.messages
