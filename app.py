@@ -915,15 +915,6 @@ else:
         - Understanding laboratory results for educational purposes
         """
     )
-    st.markdown("### Technology")
-    st.markdown(
-        """
-        - **Python** — application logic
-        - **Streamlit** — user interface
-        - **Groq API** — AI response generation
-        - **GitHub** — source-code hosting and version control
-        """
-    )
     st.markdown("### Important limitation")
     st.write(
         "This project is an educational tool. It is not a medical device, "
