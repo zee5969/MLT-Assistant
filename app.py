@@ -1,689 +1,704 @@
+import os
 import streamlit as st
 from groq import Groq
-import os
 
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-
+# =========================================================
+# PAGE CONFIGURATION
+# =========================================================
 st.set_page_config(
     page_title="MLT Medical AI Assistant",
     page_icon="🔬",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded",
 )
 
-# Hide Menu Footer Header
-hide_style = """
+# =========================================================
+# BRANDING & THEME
+# =========================================================
+st.markdown(
+    """
     <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
 
-    /* Hide GitHub fork button */
-    .viewerBadge_container__1QSob {
-        display: none !important;
+    :root {
+        --navy: #10243A;
+        --blue: #176B87;
+        --teal: #20A39E;
+        --ink: #172B3A;
+        --muted: #627586;
+        --line: #E4EBF0;
+        --surface: #F5F8FA;
     }
 
-    /* Hide deploy button */
-    .stDeployButton {
-        display: none !important;
+    html, body, [class*="css"] {
+        font-family: 'DM Sans', sans-serif;
     }
 
-    /* Hide GitHub logo */
-    [data-testid="stToolbar"] {
-        display: none !important;
+    .stApp {
+        background: #F6F9FB;
+        color: var(--ink);
     }
 
-    /* Hide top right buttons */
-    .stAppDeployButton {
-        display: none !important;
-    }
-
-    /* Hide fork button */
-    ._profilePreview_gzau3_63 {
-        display: none !important;
-    }
-
-    /* Hide all top bar */
     [data-testid="stHeader"] {
-        display: none !important;
-    }
-
-    .stButton button {
-        background-color: #11998e;
-        color: white;
-        border-radius: 10px;
-        border: none;
-        padding: 10px 20px;
-        font-size: 16px;
-        width: 100%;
-    }
-
-    .stButton button:hover {
-        background-color: #38ef7d;
-        color: black;
+        background: rgba(246, 249, 251, 0.92);
     }
 
     [data-testid="stSidebar"] {
-        background-color: #0d4f47;
+        background: #10243A;
+        border-right: 1px solid rgba(255,255,255,0.08);
+    }
+
+    [data-testid="stSidebar"] * {
+        color: #EAF2F7;
+    }
+
+    [data-testid="stSidebar"] .stCaption {
+        color: #B8C9D6 !important;
+    }
+
+    [data-testid="stSidebar"] hr {
+        border-color: rgba(255,255,255,0.16);
+    }
+
+    .brand-mark {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 0 18px 0;
+    }
+
+    .brand-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #20A39E, #176B87);
+        color: white;
+        font-size: 23px;
+        box-shadow: 0 8px 20px rgba(32,163,158,0.22);
+    }
+
+    .brand-name {
+        font-family: 'Manrope', sans-serif;
+        color: white;
+        font-size: 17px;
+        line-height: 1.2;
+        font-weight: 800;
+    }
+
+    .brand-sub {
+        color: #B8C9D6;
+        font-size: 11px;
+        margin-top: 4px;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+
+    .hero {
+        background: linear-gradient(120deg, #10243A 0%, #174D68 58%, #168A8A 100%);
+        border-radius: 22px;
+        padding: 30px 34px;
+        color: white;
+        margin: 4px 0 24px 0;
+        box-shadow: 0 14px 34px rgba(16,36,58,0.13);
+    }
+
+    .hero-eyebrow {
+        color: #BFE9E5;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: .13em;
+        text-transform: uppercase;
+        margin-bottom: 9px;
+    }
+
+    .hero h1 {
+        color: white;
+        font-family: 'Manrope', sans-serif;
+        font-size: clamp(26px, 3vw, 38px);
+        font-weight: 800;
+        line-height: 1.15;
+        margin: 0 0 10px 0;
+    }
+
+    .hero p {
+        color: #E2EEF3;
+        font-size: 15px;
+        margin: 0;
+        max-width: 760px;
+        line-height: 1.6;
+    }
+
+    .section-heading {
+        color: #10243A;
+        font-family: 'Manrope', sans-serif;
+        font-size: 21px;
+        font-weight: 800;
+        margin: 8px 0 4px 0;
+    }
+
+    .section-subtitle {
+        color: #627586;
+        font-size: 13px;
+        margin-bottom: 16px;
+    }
+
+    .info-card {
+        background: white;
+        border: 1px solid #E4EBF0;
+        border-radius: 16px;
+        padding: 17px 18px;
+        min-height: 108px;
+        box-shadow: 0 4px 14px rgba(16,36,58,0.035);
+    }
+
+    .info-card .card-label {
+        color: #627586;
+        font-size: 12px;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .info-card .card-value {
+        color: #10243A;
+        font-family: 'Manrope', sans-serif;
+        font-size: 17px;
+        font-weight: 800;
+    }
+
+    .info-card .card-note {
+        color: #718392;
+        font-size: 11px;
+        margin-top: 5px;
+    }
+
+    .stButton > button {
+        border-radius: 11px;
+        border: 1px solid #D8E4EA;
+        font-weight: 600;
+        min-height: 42px;
+        transition: all .15s ease;
+    }
+
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(100deg, #176B87, #20A39E);
+        border: 0;
         color: white;
     }
 
-    [data-testid="stSidebar"] p {
-        color: white;
-    }
-
-    [data-testid="stSidebar"] h1 {
-        color: white;
-    }
-
-    [data-testid="stSidebar"] h2 {
-        color: white;
-    }
-
-    [data-testid="stSidebar"] h3 {
-        color: white;
+    .stButton > button:hover {
+        border-color: #20A39E;
+        color: #176B87;
     }
 
     .stChatMessage {
-        border-radius: 15px;
-        padding: 10px;
-    }
-    </style>
-"""
-st.markdown(hide_style, unsafe_allow_html=True)
-
-# ============================================
-# SIDEBAR
-# ============================================
-
-st.sidebar.markdown(
-    "<h2 style='color:white'>Zeeshan Ali</h2>",
-    unsafe_allow_html=True
-)
-st.sidebar.markdown(
-    "<p style='color:white'>🏥 Medical Lab Technology Student</p>",
-    unsafe_allow_html=True
-)
-st.sidebar.markdown(
-    "<p style='color:white'>🎓 Riphah International University</p>",
-    unsafe_allow_html=True
-)
-st.sidebar.markdown("---")
-
-st.sidebar.markdown(
-    "<h3 style='color:white'>🔬 I can help with:</h3>",
-    unsafe_allow_html=True
-)
-st.sidebar.markdown(
-    "<p style='color:white'>✅ Lab Test Questions</p>",
-    unsafe_allow_html=True
-)
-st.sidebar.markdown(
-    "<p style='color:white'>✅ Symptom Checking</p>",
-    unsafe_allow_html=True
-)
-st.sidebar.markdown(
-    "<p style='color:white'>✅ Lab Report Analysis</p>",
-    unsafe_allow_html=True
-)
-st.sidebar.markdown(
-    "<p style='color:white'>✅ Medical Terms</p>",
-    unsafe_allow_html=True
-)
-st.sidebar.markdown(
-    "<p style='color:white'>✅ MLT Study Help</p>",
-    unsafe_allow_html=True
-)
-st.sidebar.markdown(
-    "<p style='color:white'>✅ Health Questions</p>",
-    unsafe_allow_html=True
-)
-st.sidebar.markdown(
-    "<p style='color:white'>✅ Medicine Info</p>",
-    unsafe_allow_html=True
-)
-st.sidebar.markdown(
-    "<p style='color:white'>✅ Diet Advice</p>",
-    unsafe_allow_html=True
-)
-st.sidebar.markdown(
-    "<p style='color:white'>✅ First Aid Help</p>",
-    unsafe_allow_html=True
-)
-st.sidebar.markdown("---")
-
-st.sidebar.markdown(
-    "<h3 style='color:white'>📊 Normal Values!</h3>",
-    unsafe_allow_html=True
-)
-st.sidebar.info("""
-🩸 Blood Sugar
-Normal: 70-100 mg/dL
-Pre-diabetes: 100-125
-Diabetes: 126+
-""")
-st.sidebar.info("""
-❤️ Blood Pressure
-Normal: 120/80
-High: 140/90+
-Low: 90/60-
-""")
-st.sidebar.info("""
-🔬 Hemoglobin
-Men: 13.5-17.5 g/dL
-Women: 12-15.5 g/dL
-Low = Anemia
-""")
-st.sidebar.info("""
-🫀 Pulse Rate
-Normal: 60-100/min
-Athletes: 40-60/min
-""")
-st.sidebar.markdown("---")
-
-st.sidebar.markdown(
-    "<p style='color:white'>📎 Upload Medical Report</p>",
-    unsafe_allow_html=True
-)
-uploaded_file = st.sidebar.file_uploader(
-    "Choose a file",
-    type=["txt", "pdf", "png", "jpg", "jpeg"],
-    label_visibility="collapsed"
-)
-if uploaded_file is not None:
-    st.sidebar.success(f"✅ {uploaded_file.name}")
-    if uploaded_file.type.startswith("image"):
-        st.sidebar.image(uploaded_file, width=150)
-
-st.sidebar.markdown("---")
-st.sidebar.markdown(
-    "<p style='color:white'>⭐ Give Us Feedback!</p>",
-    unsafe_allow_html=True
-)
-st.sidebar.markdown(
-    """
-    <a href="https://docs.google.com/forms/d/e/1FAIpQLSdFPi-G7vvQmojacHAh1GXs1kjWcAtgp3M1x-XGHuYW_DEkQA/viewform?usp=header" 
-    target="_blank">
-    <button style="
-        background-color: #11998e;
-        color: white;
-        padding: 10px 20px;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        width: 100%;
-        font-size: 16px;
-    ">
-    📝 Give Feedback!
-    </button>
-    </a>
-    """,
-    unsafe_allow_html=True
-)
-
-# ============================================
-# MEDICAL AI PERSONALITY
-# ============================================
-
-medical_prompt = """
-You are an advanced Medical AI Assistant
-created by Zeeshan Ali, a Medical Lab Technology student at
-Riphah International University Islamabad.
-
-IMPORTANT RULES:
-1. ALL information must be according to
-   WHO (World Health Organization) guidelines
-2. ALL lab values must follow
-   international standard ranges
-3. NEVER give wrong medical information
-4. ALWAYS recommend seeing real doctor
-5. Be extremely careful with dosages
-6. Never recommend self medication
-7. Always mention side effects of medicines
-
-WHO STANDARD LAB VALUES:
-- Blood Sugar (Fasting): 70-100 mg/dL
-- Blood Sugar (Random): Less than 140 mg/dL
-- HbA1c Normal: Less than 5.7%
-- HbA1c Pre-diabetes: 5.7-6.4%
-- HbA1c Diabetes: 6.5% or higher
-
-- Blood Pressure Normal: Less than 120/80
-- Blood Pressure Elevated: 120-129/less than 80
-- High Blood Pressure Stage 1: 130-139/80-89
-- High Blood Pressure Stage 2: 140+/90+
-- Hypertensive Crisis: Higher than 180/120
-
-- Hemoglobin Men: 13.5-17.5 g/dL
-- Hemoglobin Women: 12.0-15.5 g/dL
-- Hemoglobin Children: 11.0-16.0 g/dL
-
-- WBC Count: 4,500-11,000 cells/mcL
-- Platelets: 150,000-400,000/mcL
-- RBC Men: 4.5-5.5 million/mcL
-- RBC Women: 4.0-5.0 million/mcL
-
-- Total Cholesterol: Less than 200 mg/dL
-- LDL Cholesterol: Less than 100 mg/dL
-- HDL Men: More than 40 mg/dL
-- HDL Women: More than 50 mg/dL
-- Triglycerides: Less than 150 mg/dL
-
-- Creatinine Men: 0.7-1.2 mg/dL
-- Creatinine Women: 0.5-1.0 mg/dL
-- Uric Acid Men: 3.5-7.2 mg/dL
-- Uric Acid Women: 2.6-6.0 mg/dL
-
-- TSH Normal: 0.4-4.0 mIU/L
-- T3 Normal: 80-200 ng/dL
-- T4 Normal: 5.0-12.0 mcg/dL
-
-- ALT Normal: 7-56 units/L
-- AST Normal: 10-40 units/L
-- Bilirubin Total: 0.1-1.2 mg/dL
-
-- Pulse Rate Normal: 60-100 beats/min
-- Respiratory Rate: 12-20 breaths/min
-- Temperature Normal: 36.1-37.2°C
-- Oxygen Saturation: 95-100%
-
-WHO GUIDELINES TO FOLLOW:
-1. Diabetes Management:
-   - WHO diabetes diagnosis criteria
-   - Lifestyle modifications first
-   - Medication only on doctor advice
-
-2. Hypertension Management:
-   - WHO blood pressure guidelines 2023
-   - DASH diet recommendations
-   - Lifestyle changes importance
-
-3. Anemia Management:
-   - WHO anemia classification
-   - Iron deficiency treatment
-   - B12 and folate importance
-
-4. Infection Control:
-   - WHO infection prevention guidelines
-   - Antibiotic stewardship
-   - Never recommend antibiotics
-     without doctor prescription
-
-5. Nutrition:
-   - WHO healthy diet guidelines
-   - Balanced diet recommendations
-   - Specific diet for conditions
-
-RESPONSE FORMAT:
-- Always start with greeting
-- Give clear accurate information
-- Use simple language
-- Give WHO reference when possible
-- Always end with:
-  "Please consult a qualified doctor
-   for proper diagnosis and treatment"
-
-NEVER DO:
-❌ Give wrong information
-❌ Recommend specific medicines
-   without mentioning doctor consultation
-❌ Diagnose serious conditions
-❌ Replace real doctor advice
-❌ Give information not backed by WHO
-"""
-
-# ============================================
-# MAIN PAGE
-# ============================================
-
-# Beautiful Green Header
-st.markdown("""
-    <div style="
-        background: linear-gradient(
-            to right,
-            #11998e,
-            #38ef7d
-        );
-        padding: 20px;
-        border-radius: 10px;
-        text-align: center;
-        color: Black;
-        margin-bottom: 20px;
-    ">
-        <h1>MLT Medical AI Assistant</h1>
-        <p style="font-size: 18px;">
-        Your Personal Medical Guide - Available 24/7
-        </p>
-    </div>
-""", unsafe_allow_html=True)
-
-# Feedback button for mobile
-st.markdown(
-    """
-    <a href="https://docs.google.com/forms/d/e/1FAIpQLSdFPi-G7vvQmojacHAh1GXs1kjWcAtgp3M1x-XGHuYW_DEkQA/viewform?usp=header" 
-    target="_blank">
-    <button style="
-        background-color: #11998e;
-        color: white;
-        padding: 8px 15px;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 14px;
+        background: white;
+        border: 1px solid #E7EDF1;
+        border-radius: 16px;
+        padding: 14px 16px;
         margin-bottom: 10px;
-    ">
-    📝 Give Feedback!
-    </button>
-    </a>
+    }
+
+    [data-testid="stChatInput"] {
+        border-color: #D8E4EA;
+    }
+
+    [data-testid="stExpander"] {
+        background: white;
+        border: 1px solid #E4EBF0;
+        border-radius: 14px;
+    }
+
+    div[data-testid="stMetric"] {
+        background: white;
+        border: 1px solid #E4EBF0;
+        padding: 14px;
+        border-radius: 14px;
+    }
+
+    .disclaimer {
+        background: #FFF8E9;
+        border: 1px solid #F3DFB3;
+        color: #75551C;
+        border-radius: 12px;
+        padding: 13px 16px;
+        font-size: 12px;
+        line-height: 1.55;
+        margin-top: 18px;
+    }
+
+    .footer {
+        color: #82919D;
+        text-align: center;
+        font-size: 11px;
+        padding: 22px 0 8px 0;
+    }
+
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    </style>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
-st.markdown("---")
-
-# ============================================
-# PATIENT INFORMATION
-# ============================================
-
-st.markdown("""
-    <h3 style='color:#11998e'>
-    👤 Tell Us About Yourself!
-    </h3>
-""", unsafe_allow_html=True)
-st.write("This helps us give better advice!")
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    age = st.number_input(
-        "Your Age",
-        min_value=1,
-        max_value=100,
-        value=25
-    )
-
-with col2:
-    gender = st.selectbox(
-        "Gender",
-        ["Select", "Male", "Female"]
-    )
-
-with col3:
-    weight = st.number_input(
-        "Weight (kg)",
-        min_value=1,
-        max_value=200,
-        value=70
-    )
-
-st.markdown("---")
-
-# ============================================
-# NORMAL VALUES CARDS
-# ============================================
-
-st.markdown("""
-    <h3 style='color:#11998e'>
-    📊 Quick Reference - Normal Values!
-    </h3>
-""", unsafe_allow_html=True)
-
-col1, col2, col3, col4 = st.columns(4)
-
-with col1:
-    st.success("""
-    🩸 **Blood Sugar**
-    Normal: 70-100
-    Pre-diabetes: 100-125
-    Diabetes: 126+
-    """)
-
-with col2:
-    st.success("""
-    ❤️ **Blood Pressure**
-    Normal: 120/80
-    High: 140/90+
-    Low: 90/60-
-    """)
-
-with col3:
-    st.success("""
-    🔬 **Hemoglobin**
-    Men: 13.5-17.5
-    Women: 12-15.5
-    Low = Anemia
-    """)
-
-with col4:
-    st.success("""
-    🫀 **Pulse Rate**
-    Normal: 60-100
-    Athletes: 40-60
-    High: 100+
-    """)
-
-st.markdown("---")
-
-# ============================================
-# SYMPTOM CHECKER
-# ============================================
-
-st.markdown("""
-    <h3 style='color:#11998e'>
-    🤒 Symptom Checker!
-    </h3>
-""", unsafe_allow_html=True)
-st.write("Select your symptoms and we will help!")
-
-symptoms = st.multiselect(
-    "What symptoms do you have?",
-    [
-        "Fever 🌡️",
-        "Headache 🤕",
-        "Chest Pain 💔",
-        "Stomach Pain 🤢",
-        "Fatigue 😴",
-        "Cough 😷",
-        "Shortness of Breath 😮‍💨",
-        "Dizziness 😵",
-        "Nausea 🤮",
-        "Joint Pain 🦴",
-        "Back Pain 😣",
-        "High Blood Sugar 🩸",
-        "High Blood Pressure ❤️",
-        "Weight Loss ⚖️",
-        "Frequent Urination 🚽",
-        "Blurred Vision 👁️",
-        "Skin Problems 🩹",
-        "Hair Loss 💇",
-        "Weakness 😩",
-        "Loss of Appetite 🍽️"
-    ]
+# =========================================================
+# APPLICATION CONFIGURATION
+# =========================================================
+CREATOR_NAME = "Zeeshan Ali"
+CREATOR_DESCRIPTION = (
+    "Medical Laboratory Technology student and AI enthusiast. "
+    "Creator of the MLT Medical AI Assistant."
+)
+FEEDBACK_URL = (
+    "https://docs.google.com/forms/d/e/"
+    "1FAIpQLSdFPi-G7vvQmojacHAh1GXs1kjWcAtgp3M1x-XGHuYW_DEkQA/viewform?usp=header"
 )
 
-if st.button("🔍 Check My Symptoms!"):
-    if symptoms:
-        symptom_text = ", ".join(symptoms)
-        patient_info = ""
-        if gender != "Select":
-            patient_info = f"Patient is {age} years old {gender} weighing {weight}kg. "
+# Keep the model configurable in Streamlit Secrets or environment variables.
+MODEL_NAME = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 
-        message = f"{patient_info}I have these symptoms: {symptom_text}. What could be wrong and what should I do?"
+SYSTEM_PROMPT = """
+You are the MLT Medical AI Assistant, an educational assistant focused primarily
+on Medical Laboratory Technology (MLT), laboratory medicine, and biomedical
+science.
 
-        st.session_state.messages.append({
-            "role": "user",
-            "content": message
-        })
-    else:
-        st.warning("Please select at least one symptom!")
+CREATOR
+If a user asks who created, developed, built, or made you, answer clearly:
+"I was developed by Zeeshan Ali, a Medical Laboratory Technology student and
+AI enthusiast. This project combines MLT education with artificial intelligence
+to support students and learners in understanding laboratory science."
+Do not claim that the creator is a doctor, physician, hospital, or medical
+institution.
 
-st.markdown("---")
+CORE SUBJECT AREAS
+- Hematology and blood banking / transfusion science
+- Clinical chemistry / clinical biochemistry
+- Medical microbiology and parasitology
+- Histopathology and cytopathology
+- Immunology and serology
+- Molecular diagnostics, PCR, genetics, and laboratory techniques
+- Quality control, quality assurance, biosafety, and laboratory management
+- Specimen collection, handling, processing, and rejection criteria
+- MLT examinations, revision notes, viva questions, and MCQs
 
-# ============================================
-# LAB REPORT ANALYZER
-# ============================================
+RESPONSE STYLE
+- Explain concepts in clear, student-friendly language.
+- Use headings, concise bullet points, tables, and stepwise explanations when useful.
+- For laboratory tests, explain purpose, specimen, principle, procedure overview,
+  clinical significance, and important limitations when relevant.
+- For MCQs, provide four options, identify the correct answer, and explain why.
+- Distinguish established facts from uncertain or context-dependent information.
+- Do not invent references, guideline quotations, citations, or laboratory ranges.
+- Encourage checking the relevant textbook, laboratory SOP, and current official
+  guidance for academic or clinical work.
 
-st.markdown("""
-    <h3 style='color:#11998e'>
-    🔬 Lab Report Analyzer!
-    </h3>
-""", unsafe_allow_html=True)
-st.write("Enter your test results and we will explain them!")
+LABORATORY RESULTS AND REFERENCE INTERVALS
+- Reference intervals vary by laboratory, method, instrument, age, sex, pregnancy
+  status, population, and clinical context.
+- Prefer the reference interval printed on the user's own laboratory report.
+- Never label a result as a diagnosis based on one value alone.
+- Explain possible interpretations cautiously and identify when clinician review
+  is important.
+- Do not describe every reference value as a universal WHO standard.
 
-with st.expander("📋 Click to Enter Your Lab Results!"):
-    col1, col2 = st.columns(2)
+MEDICAL SAFETY
+- You are an educational AI tool, not a doctor or a diagnostic service.
+- Do not diagnose a user or claim certainty about a disease.
+- Do not prescribe medicines, recommend changing doses, or advise stopping
+  prescribed treatment.
+- Do not interpret symptoms as a confirmed diagnosis.
+- For emergency warning signs (for example severe chest pain, severe breathing
+  difficulty, stroke signs, unconsciousness, or severe bleeding), advise seeking
+  emergency medical care immediately.
+- Protect privacy: remind users not to share names, phone numbers, addresses,
+  identity numbers, or other identifying information from medical reports.
+- Do not claim to have inspected an uploaded file unless its contents are actually
+  provided to you in the conversation.
 
-    with col1:
-        hemoglobin = st.text_input("Hemoglobin (g/dL)")
-        blood_sugar = st.text_input("Blood Sugar (mg/dL)")
-        bp_systolic = st.text_input("Blood Pressure Systolic")
-        wbc = st.text_input("WBC Count")
-        platelets = st.text_input("Platelets")
+Keep the assistant's identity focused on MLT education and laboratory science.
+"""
 
-    with col2:
-        cholesterol = st.text_input("Cholesterol (mg/dL)")
-        bp_diastolic = st.text_input("Blood Pressure Diastolic")
-        creatinine = st.text_input("Creatinine")
-        uric_acid = st.text_input("Uric Acid")
-        tsh = st.text_input("TSH (Thyroid)")
-
-    if st.button("🔍 Analyze My Lab Report!"):
-        report_parts = []
-
-        if hemoglobin:
-            report_parts.append(f"Hemoglobin: {hemoglobin} g/dL")
-        if blood_sugar:
-            report_parts.append(f"Blood Sugar: {blood_sugar} mg/dL")
-        if bp_systolic and bp_diastolic:
-            report_parts.append(f"Blood Pressure: {bp_systolic}/{bp_diastolic}")
-        if wbc:
-            report_parts.append(f"WBC Count: {wbc}")
-        if platelets:
-            report_parts.append(f"Platelets: {platelets}")
-        if cholesterol:
-            report_parts.append(f"Cholesterol: {cholesterol} mg/dL")
-        if creatinine:
-            report_parts.append(f"Creatinine: {creatinine}")
-        if uric_acid:
-            report_parts.append(f"Uric Acid: {uric_acid}")
-        if tsh:
-            report_parts.append(f"TSH: {tsh}")
-
-        if report_parts:
-            patient_info = ""
-            if gender != "Select":
-                patient_info = f"Patient is {age} years old {gender}. "
-
-            report_text = "\n".join(report_parts)
-            message = f"{patient_info}Please analyze these lab results and tell me if they are normal or not and what I should do:\n{report_text}"
-
-            st.session_state.messages.append({
-                "role": "user",
-                "content": message
-            })
-        else:
-            st.warning("Please enter at least one test result!")
-
-st.markdown("---")
-
-# ============================================
-# CHAT SECTION
-# ============================================
-
-st.markdown("""
-    <h3 style='color:#11998e'>
-    💬 Chat With Medical AI!
-    </h3>
-""", unsafe_allow_html=True)
-
+# =========================================================
+# SESSION STATE
+# =========================================================
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if "quick" not in st.session_state:
-    st.session_state.quick = None
+if "pending_prompt" not in st.session_state:
+    st.session_state.pending_prompt = None
 
-if st.session_state.quick:
-    quick_q = st.session_state.quick
-    st.session_state.quick = None
+# =========================================================
+# GROQ CLIENT
+# =========================================================
+def get_groq_client():
+    """Create the Groq client without exposing the API key."""
+    api_key = None
 
-    with st.chat_message("user"):
-        st.write(quick_q)
+    try:
+        api_key = st.secrets.get("GROQ_API_KEY")
+    except Exception:
+        api_key = None
 
-    st.session_state.messages.append({
-        "role": "user",
-        "content": quick_q
-    })
+    api_key = api_key or os.getenv("GROQ_API_KEY")
+
+    if not api_key:
+        return None
+
+    return Groq(api_key=api_key)
+
+
+def get_ai_response(conversation):
+    """Send conversation to Groq and return the assistant response."""
+    client = get_groq_client()
+    if client is None:
+        raise RuntimeError(
+            "GROQ_API_KEY is not configured. Add it to Streamlit Secrets "
+            "or your environment variables."
+        )
 
     response = client.chat.completions.create(
-        model="openai/gpt-oss-20b",
+        model=MODEL_NAME,
         messages=[
-            {"role": "system", "content": medical_prompt},
-            *st.session_state.messages
-        ]
+            {"role": "system", "content": SYSTEM_PROMPT},
+            *conversation,
+        ],
+        temperature=0.4,
+        max_tokens=1800,
+    )
+    return response.choices[0].message.content
+
+
+def submit_user_message(message):
+    """Add a user message, request a reply, and preserve chat history."""
+    clean_message = message.strip()
+    if not clean_message:
+        return
+
+    st.session_state.messages.append(
+        {"role": "user", "content": clean_message}
     )
 
-    ai_reply = response.choices[0].message.content
+    try:
+        with st.spinner("Preparing an MLT-focused response..."):
+            answer = get_ai_response(st.session_state.messages)
+        st.session_state.messages.append(
+            {"role": "assistant", "content": answer}
+        )
+    except Exception as error:
+        # Keep the user question in history, but do not expose secrets or tracebacks.
+        st.error(f"Unable to generate a response: {error}")
 
-    with st.chat_message("assistant"):
-        st.write(ai_reply)
 
-    st.session_state.messages.append({
-        "role": "assistant",
-        "content": ai_reply
-    })
+# =========================================================
+# SIDEBAR
+# =========================================================
+with st.sidebar:
+    st.markdown(
+        """
+        <div class="brand-mark">
+            <div class="brand-icon">🔬</div>
+            <div>
+                <div class="brand-name">MLT Medical AI</div>
+                <div class="brand-sub">Laboratory learning assistant</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.write(message["content"])
+    st.markdown("---")
+    st.markdown("### Navigation")
+    page = st.radio(
+        "Choose a workspace",
+        ["AI Assistant", "Lab Result Explainer", "About the Project"],
+        label_visibility="collapsed",
+    )
 
-user_input = st.chat_input(
-    "Ask your medical question here... 🏥"
+    st.markdown("---")
+    st.markdown("### Developer")
+    st.markdown("**Zeeshan Ali**")
+    st.caption("Medical Laboratory Technology Student")
+    st.caption("AI & Healthcare Technology Enthusiast")
+
+    st.markdown("---")
+    st.markdown("### Learning areas")
+    st.markdown(
+        """
+        - Hematology
+        - Clinical Biochemistry
+        - Microbiology
+        - Histopathology
+        - Immunology & Serology
+        - Molecular Diagnostics
+        - Parasitology
+        - Quality Assurance
+        """
+    )
+
+    st.markdown("---")
+    if st.button("🗑️ Clear conversation", use_container_width=True):
+        st.session_state.messages = []
+        st.session_state.pending_prompt = None
+        st.rerun()
+
+    st.link_button("✉️ Share feedback", FEEDBACK_URL, use_container_width=True)
+    st.caption("Educational support only • Not a diagnostic service")
+
+# =========================================================
+# MAIN HEADER
+# =========================================================
+st.markdown(
+    """
+    <div class="hero">
+        <div class="hero-eyebrow">Medical Laboratory Technology • AI Learning</div>
+        <h1>MLT Medical AI Assistant</h1>
+        <p>
+            Explore laboratory science, understand diagnostic tests, prepare for
+            examinations, and strengthen your MLT knowledge with an AI-powered
+            learning companion.
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
 
-if user_input:
-    with st.chat_message("user"):
-        st.write(user_input)
-
-    patient_context = ""
-    if gender != "Select":
-        patient_context = f"Patient is {age} years old {gender} weighing {weight}kg. "
-
-    full_message = patient_context + user_input
-
-    st.session_state.messages.append({
-        "role": "user",
-        "content": full_message
-    })
-
-    response = client.chat.completions.create(
-        model="openai/gpt-oss-20b",
-        messages=[
-            {"role": "system", "content": medical_prompt},
-            *st.session_state.messages
-        ]
+# =========================================================
+# PAGE: AI ASSISTANT
+# =========================================================
+if page == "AI Assistant":
+    st.markdown('<div class="section-heading">Your learning workspace</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-subtitle">Ask a question or choose a topic to get started.</div>',
+        unsafe_allow_html=True,
     )
 
-    ai_reply = response.choices[0].message.content
+    metric_cols = st.columns(3)
+    with metric_cols[0]:
+        st.markdown(
+            '<div class="info-card"><div class="card-label">CORE FOCUS</div>'
+            '<div class="card-value">MLT Education</div>'
+            '<div class="card-note">Laboratory science and diagnostics</div></div>',
+            unsafe_allow_html=True,
+        )
+    with metric_cols[1]:
+        st.markdown(
+            '<div class="info-card"><div class="card-label">STUDY SUPPORT</div>'
+            '<div class="card-value">Notes & MCQs</div>'
+            '<div class="card-note">Concepts, revision and exam practice</div></div>',
+            unsafe_allow_html=True,
+        )
+    with metric_cols[2]:
+        st.markdown(
+            '<div class="info-card"><div class="card-label">AI ENGINE</div>'
+            f'<div class="card-value">{MODEL_NAME}</div>'
+            '<div class="card-note">Powered by Groq</div></div>',
+            unsafe_allow_html=True,
+        )
 
-    with st.chat_message("assistant"):
-        st.write(ai_reply)
+    st.markdown("")
+    st.markdown("#### Explore a topic")
 
-    st.session_state.messages.append({
-        "role": "assistant",
-        "content": ai_reply
-    })
+    quick_cols = st.columns(2)
+    quick_prompts = [
+        ("🩸 Hematology", "Explain the complete blood count (CBC), its parameters, and clinical significance in simple MLT student language."),
+        ("🧫 Microbiology", "Explain Gram staining: principle, reagents, procedure, results, and common errors."),
+        ("🧪 Clinical Biochemistry", "Explain liver function tests (LFTs), their components, and clinical significance in a clear table."),
+        ("🧬 Molecular Diagnostics", "Explain PCR: principle, steps, components, applications, and common sources of error."),
+    ]
 
-# ============================================
+    for index, (label, prompt) in enumerate(quick_prompts):
+        with quick_cols[index % 2]:
+            if st.button(label, key=f"quick_{index}", use_container_width=True):
+                st.session_state.pending_prompt = prompt
+                st.rerun()
+
+    st.markdown("---")
+    st.markdown("#### Conversation")
+
+    if not st.session_state.messages:
+        st.info(
+            "Welcome! Ask me about an MLT subject, laboratory test, practical "
+            "technique, viva question, or exam topic."
+        )
+
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    if st.session_state.pending_prompt:
+        prompt_to_send = st.session_state.pending_prompt
+        st.session_state.pending_prompt = None
+        submit_user_message(prompt_to_send)
+        st.rerun()
+
+    user_input = st.chat_input(
+        "Ask about an MLT topic, laboratory test, or practical..."
+    )
+    if user_input:
+        submit_user_message(user_input)
+        st.rerun()
+
+# =========================================================
+# PAGE: LAB RESULT EXPLAINER
+# =========================================================
+elif page == "Lab Result Explainer":
+    st.markdown('<div class="section-heading">Laboratory result explainer</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-subtitle">Enter values from a report to receive an educational explanation. '
+        'Use the reference interval printed by the reporting laboratory.</div>',
+        unsafe_allow_html=True,
+    )
+
+    st.warning(
+        "Do not enter patient names, phone numbers, addresses, CNIC numbers, "
+        "hospital IDs, or other identifying information. This tool does not "
+        "provide a medical diagnosis."
+    )
+
+    with st.form("lab_result_form"):
+        col1, col2 = st.columns(2)
+
+        with col1:
+            test_name = st.text_input("Test name", placeholder="e.g. Hemoglobin")
+            result_value = st.text_input("Your result", placeholder="e.g. 10.8")
+            unit = st.text_input("Unit", placeholder="e.g. g/dL")
+
+        with col2:
+            lab_range = st.text_input(
+                "Reference interval on your report",
+                placeholder="e.g. 12.0–16.0",
+            )
+            age_group = st.selectbox(
+                "Age group",
+                ["Not specified", "Child", "Adult", "Older adult"],
+            )
+            context = st.text_area(
+                "Additional non-identifying context (optional)",
+                placeholder="e.g. Fasting sample; any relevant test context",
+                height=90,
+            )
+
+        submitted = st.form_submit_button(
+            "Explain this laboratory result",
+            type="primary",
+            use_container_width=True,
+        )
+
+    if submitted:
+        if not test_name.strip() or not result_value.strip():
+            st.warning("Please enter at least the test name and result.")
+        else:
+            lab_question = f"""
+Please explain this laboratory result for educational purposes.
+
+Test: {test_name}
+Result: {result_value}
+Unit: {unit or "Not provided"}
+Reference interval printed on report: {lab_range or "Not provided"}
+Age group: {age_group}
+Additional context: {context or "None provided"}
+
+Please explain what the test measures, how this result compares with the
+provided interval if one is available, possible factors that can affect it,
+and what questions a patient may discuss with a qualified clinician.
+Do not diagnose or prescribe. If the reference interval is missing, explain
+why interpretation is limited.
+"""
+            submit_user_message(lab_question)
+            st.rerun()
+
+    st.markdown(
+        """
+        <div class="disclaimer">
+            <strong>Important:</strong> Laboratory reference intervals differ between
+            laboratories and patient groups. A result outside a reference interval
+            does not automatically mean disease, and a result inside it does not
+            rule out disease. A qualified clinician must interpret results in context.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+# =========================================================
+# PAGE: ABOUT
+# =========================================================
+else:
+    st.markdown('<div class="section-heading">About this project</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-subtitle">The purpose, creator, and scope of the MLT Medical AI Assistant.</div>',
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        """
+        <div class="info-card">
+            <div class="card-label">PROJECT</div>
+            <div class="card-value">MLT Medical AI Assistant</div>
+            <div class="card-note">An AI-powered educational companion for Medical Laboratory Technology.</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("### Created by Zeeshan Ali")
+    st.write(
+        "Zeeshan Ali is a Medical Laboratory Technology student and AI enthusiast. "
+        "He developed this project to bring together MLT learning and artificial "
+        "intelligence in a simple, accessible study assistant."
+    )
+
+    st.markdown("### What it is designed to support")
+    st.markdown(
+        """
+        - Understanding laboratory tests and their principles
+        - Learning core MLT subjects
+        - Preparing revision notes, MCQs, and viva questions
+        - Explaining laboratory terminology and techniques
+        - Understanding laboratory results for educational purposes
+        """
+    )
+
+    st.markdown("### Technology")
+    st.markdown(
+        """
+        - **Python** — application logic
+        - **Streamlit** — user interface
+        - **Groq API** — AI response generation
+        - **GitHub** — source-code hosting and version control
+        """
+    )
+
+    st.markdown("### Important limitation")
+    st.write(
+        "This project is an educational tool. It is not a medical device, "
+        "clinical laboratory information system, or substitute for a qualified "
+        "healthcare professional. It does not independently verify laboratory "
+        "results or provide a diagnosis."
+    )
+
+    st.markdown(
+        """
+        <div class="disclaimer">
+            <strong>Medical safety notice:</strong> Do not use this assistant for
+            emergency decisions, diagnosis, or treatment decisions. Seek qualified
+            medical care for personal health concerns.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+# =========================================================
 # FOOTER
-# ============================================
-
-st.markdown("---")
-st.markdown("""
-    <div style="
-        text-align: center;
-        color: Red;
-        padding: 10px;
-    ">
-        <p>⚠️ This AI is for information only!</p>
-             <p>Always consult a real doctor!</p>
+# =========================================================
+st.markdown(
+    """
+    <div class="footer">
+        MLT Medical AI Assistant · Created by Zeeshan Ali · Built for learning
+        <br>
+        Educational information only — not a substitute for professional medical care.
     </div>
-""", unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True,
+)
