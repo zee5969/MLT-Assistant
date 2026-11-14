@@ -533,6 +533,21 @@ st.markdown(
         color: #183246 !important;
     }
 
+    /* Primary buttons (including form submit buttons) in any Streamlit version. */
+    button[kind^="primary"],
+    [data-testid="stBaseButton-primary"],
+    [data-testid="stBaseButton-primaryFormSubmit"] {
+        background: linear-gradient(100deg, #176B87, #0D9488) !important;
+        border: 0 !important;
+        color: #FFFFFF !important;
+    }
+    button[kind^="primary"] *,
+    [data-testid="stBaseButton-primary"] *,
+    [data-testid="stBaseButton-primaryFormSubmit"] * {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+    }
+
     /* Sign-in / Create account tabs. */
     button[data-baseweb="tab"] p,
     button[role="tab"] p {
@@ -545,6 +560,13 @@ st.markdown(
     }
     [data-baseweb="tab-highlight"] {
         background-color: #0D9488 !important;
+    }
+    [data-baseweb="tab-border"] {
+        background-color: #D8E1E8 !important;
+    }
+    button[role="tab"][aria-selected="true"],
+    button[role="tab"][aria-selected="true"] * {
+        color: #0B6B8A !important;
     }
 
     /* Remove the Fork / GitHub / Deploy toolbar and the menu. */
@@ -858,10 +880,23 @@ def db_request(method, params=None, payload=None):
         raise RuntimeError("Could not reach the account database. Please try again in a moment.")
 
 
+def _db_error(response, fallback):
+    """Build a readable error that includes the HTTP code and Supabase's short message."""
+    detail = ""
+    try:
+        body = response.json()
+        if isinstance(body, dict):
+            detail = str(body.get("message") or body.get("error") or "")[:140]
+    except Exception:
+        pass
+    suffix = f"code {response.status_code}" + (f": {detail}" if detail else "")
+    return RuntimeError(f"{fallback} ({suffix})")
+
+
 def db_get_user(email):
     response = db_request("GET", params={"email": f"eq.{email}", "select": "*"})
     if response.status_code != 200:
-        raise RuntimeError("The account database returned an error. Please try again.")
+        raise _db_error(response, "The account database returned an error. Please try again.")
     rows = response.json()
     return rows[0] if rows else None
 
@@ -874,14 +909,14 @@ def db_create_user(email, name, salt, password_hash):
     if response.status_code == 409:
         return False
     if response.status_code not in (200, 201):
-        raise RuntimeError("Could not create the account. Please try again.")
+        raise _db_error(response, "Could not create the account. Please try again.")
     return True
 
 
 def db_update_user(email, changes):
     response = db_request("PATCH", params={"email": f"eq.{email}"}, payload=changes)
     if response.status_code not in (200, 204):
-        raise RuntimeError("Could not save the change. Please try again.")
+        raise _db_error(response, "Could not save the change. Please try again.")
     rows = response.json() if response.content else []
     return rows[0] if rows else None
 
