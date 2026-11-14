@@ -316,6 +316,122 @@ st.markdown(
         padding: 22px 0 8px 0;
     }
 
+    /* =====================================================
+       FONT-COLOUR CONTRAST FIXES
+       ===================================================== */
+
+    /* Sidebar headings (Navigation, Developer, Learning areas) were navy on a
+       navy sidebar — make them white. */
+    .stApp [data-testid="stSidebar"] h1,
+    .stApp [data-testid="stSidebar"] h2,
+    .stApp [data-testid="stSidebar"] h3,
+    .stApp [data-testid="stSidebar"] h4,
+    .stApp [data-testid="stSidebar"] h5,
+    .stApp [data-testid="stSidebar"] h6 {
+        color: #FFFFFF !important;
+    }
+
+    /* Sidebar buttons have a white background, so their label must be dark
+       (it was inheriting the light sidebar text colour = white on white). */
+    .stApp [data-testid="stSidebar"] .stButton > button,
+    .stApp [data-testid="stSidebar"] .stButton > button *,
+    .stApp [data-testid="stSidebar"] .stLinkButton > a,
+    .stApp [data-testid="stSidebar"] .stLinkButton > a * {
+        color: #183246 !important;
+    }
+    .stApp [data-testid="stSidebar"] .stButton > button:hover,
+    .stApp [data-testid="stSidebar"] .stButton > button:hover *,
+    .stApp [data-testid="stSidebar"] .stLinkButton > a:hover,
+    .stApp [data-testid="stSidebar"] .stLinkButton > a:hover * {
+        color: #08766F !important;
+    }
+
+    /* Hero title stays white on the dark gradient. */
+    .stApp .hero h1 {
+        color: #FFFFFF !important;
+    }
+
+    /* Main-page buttons: dark label on white, white label on primary. */
+    .stApp [data-testid="stMain"] .stButton > button p,
+    .stApp [data-testid="stMain"] .stLinkButton > a p {
+        color: #183246 !important;
+    }
+    .stApp [data-testid="stMain"] .stButton > button:hover p {
+        color: #08766F !important;
+    }
+    .stApp [data-testid="stMain"] .stButton > button[kind="primary"] p,
+    .stApp [data-testid="stFormSubmitButton"] button[kind="primary"] p {
+        color: #FFFFFF !important;
+    }
+
+    /* Header / toolbar icons on the light header bar. */
+    [data-testid="stHeader"] button,
+    [data-testid="stHeader"] a,
+    [data-testid="stHeader"] svg {
+        color: #17212B !important;
+        fill: #17212B;
+    }
+
+    /* Links in body text and chat answers. */
+    .stApp [data-testid="stMain"] [data-testid="stMarkdownContainer"] a {
+        color: #0B6B8A !important;
+    }
+
+    /* Inline code, tables and quotes inside chat answers. */
+    [data-testid="stChatMessage"] :not(pre) > code {
+        color: #0B5C57 !important;
+    }
+    [data-testid="stChatMessage"] table th,
+    [data-testid="stChatMessage"] table td,
+    [data-testid="stChatMessage"] blockquote,
+    [data-testid="stChatMessage"] blockquote p {
+        color: #202B36 !important;
+    }
+    [data-testid="stChatMessage"] table th {
+        color: #10243A !important;
+        font-weight: 700 !important;
+    }
+
+    /* Alerts (st.info / st.warning / st.error). */
+    [data-testid="stAlert"] p,
+    [data-testid="stAlert"] li,
+    [data-testid="stAlert"] span {
+        color: #1F2A37 !important;
+    }
+
+    /* Widget labels and input text (form page). */
+    [data-testid="stWidgetLabel"] p,
+    [data-testid="stWidgetLabel"] label {
+        color: #263442 !important;
+    }
+    .stTextInput input, .stTextArea textarea, .stNumberInput input {
+        -webkit-text-fill-color: #17212B !important;
+    }
+    .stSelectbox [data-baseweb="select"] *,
+    .stSelectbox [data-baseweb="select"] input {
+        color: #17212B !important;
+        -webkit-text-fill-color: #17212B !important;
+    }
+
+    /* Selectbox dropdown list: dark text needs a light list background
+       (the only non-font-colour line, required for readable options). */
+    [data-baseweb="popover"] ul,
+    [data-baseweb="popover"] [role="listbox"] {
+        background: #FFFFFF !important;
+    }
+    [data-baseweb="popover"] li,
+    [data-baseweb="popover"] li *,
+    [data-baseweb="popover"] [role="option"],
+    [data-baseweb="popover"] [role="option"] * {
+        color: #17212B !important;
+    }
+
+    /* Spinner / progress text on the light page. */
+    [data-testid="stSpinner"] p,
+    [data-testid="stSpinner"] span {
+        color: #263442 !important;
+    }
+
     /* Hide Streamlit's built-in menu/footer. The Community Cloud Fork control
        is platform-rendered and is not reliably controlled by app CSS. */
     #MainMenu { visibility: hidden; }
