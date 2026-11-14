@@ -711,20 +711,6 @@ with st.sidebar:
     st.caption("Medical Laboratory Technology Student")
     st.caption("AI & Healthcare Technology Enthusiast")
     st.markdown("---")
-    st.markdown("### Learning areas")
-    st.markdown(
-        """
-        - Hematology
-        - Clinical Biochemistry
-        - Microbiology
-        - Histopathology
-        - Immunology & Serology
-        - Molecular Diagnostics
-        - Parasitology
-        - Quality Assurance
-        """
-    )
-    st.markdown("---")
     if st.button("🗑️ Clear conversation", use_container_width=True):
         st.session_state.messages = []
         st.session_state.pending_prompt = None
@@ -936,15 +922,6 @@ else:
         - Preparing revision notes, MCQs, and viva questions
         - Explaining laboratory terminology and techniques
         - Understanding laboratory results for educational purposes
-        """
-    )
-    st.markdown("### Technology")
-    st.markdown(
-        """
-        - **Python** — application logic
-        - **Streamlit** — user interface
-        - **Groq API** — AI response generation
-        - **GitHub** — source-code hosting and version control
         """
     )
     st.markdown("### Important limitation")
