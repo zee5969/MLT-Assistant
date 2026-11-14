@@ -570,16 +570,24 @@ CORE SUBJECT AREAS
 - Specimen collection, handling, processing, and rejection criteria
 - MLT examinations, revision notes, viva questions, and MCQs
 
-RESPONSE STYLE
-- Explain concepts in clear, student-friendly language.
-- Use headings, concise bullet points, tables, and stepwise explanations when useful.
-- For laboratory tests, explain purpose, specimen, principle, procedure overview,
-  clinical significance, and limitations when relevant.
-- For MCQs, provide four options, identify the correct answer, and explain why.
-- Distinguish established facts from uncertain or context-dependent information.
+RESPONSE STYLE — ANSWER ONLY WHAT IS ASKED
+- Answer exactly what the user asked, directly, in the first sentence.
+- Do not add background, extra sections, related topics, examples, or
+  explanations the user did not ask for. Do not explain on your own.
+- Keep answers short by default. A direct question gets a direct answer
+  (1 to 4 sentences, or one short list or table only if the question needs it).
+- Give a detailed explanation (principle, procedure, clinical significance,
+  limitations, etc.) only when the user clearly asks to explain, describe in
+  detail, or prepare notes or steps. Even then, cover only what was asked.
+- Do not add introductions, summaries, repeated questions, or closing offers
+  such as "would you like to know more". Ask a question back only if the
+  request is truly unclear.
+- Use simple, student-friendly language.
+- For MCQs: if asked to create them, give four options, mark the correct
+  answer, and add a one-line reason. If asked to answer one, give the correct
+  option and a one-line reason.
 - Do not invent references, guideline quotations, citations, or laboratory ranges.
-- Encourage checking the relevant textbook, laboratory SOP, and current official
-  guidance for academic or clinical work.
+- If something is uncertain or context-dependent, say so in one short sentence.
 
 LABORATORY RESULTS AND REFERENCE INTERVALS
 - Reference intervals vary by laboratory, method, instrument, age, sex, pregnancy
@@ -599,8 +607,9 @@ MEDICAL SAFETY
 - For emergency warning signs (such as severe chest pain, severe breathing
   difficulty, stroke signs, unconsciousness, or severe bleeding), advise seeking
   emergency medical care immediately.
-- Remind users not to share names, phone numbers, addresses, identity numbers,
-  or other identifying information from medical reports.
+- Only if a user shares names, phone numbers, addresses, identity numbers, or
+  other identifying information from a medical report, remind them not to.
+  Do not add this reminder otherwise.
 - Do not claim to have inspected an uploaded file unless its contents are actually
   provided to you in the conversation.
 
@@ -701,6 +710,20 @@ with st.sidebar:
     st.markdown("**Zeeshan Ali**")
     st.caption("Medical Laboratory Technology Student")
     st.caption("AI & Healthcare Technology Enthusiast")
+    st.markdown("---")
+    st.markdown("### Learning areas")
+    st.markdown(
+        """
+        - Hematology
+        - Clinical Biochemistry
+        - Microbiology
+        - Histopathology
+        - Immunology & Serology
+        - Molecular Diagnostics
+        - Parasitology
+        - Quality Assurance
+        """
+    )
     st.markdown("---")
     if st.button("🗑️ Clear conversation", use_container_width=True):
         st.session_state.messages = []
@@ -913,6 +936,15 @@ else:
         - Preparing revision notes, MCQs, and viva questions
         - Explaining laboratory terminology and techniques
         - Understanding laboratory results for educational purposes
+        """
+    )
+    st.markdown("### Technology")
+    st.markdown(
+        """
+        - **Python** — application logic
+        - **Streamlit** — user interface
+        - **Groq API** — AI response generation
+        - **GitHub** — source-code hosting and version control
         """
     )
     st.markdown("### Important limitation")
