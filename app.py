@@ -136,6 +136,15 @@ st.markdown(
         line-height: 1.15;
         margin: 0 0 10px 0;
     }
+    .hero .hero-title, .stApp .hero .hero-title {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+        font-family: 'Manrope', sans-serif;
+        font-size: clamp(26px, 3vw, 38px);
+        font-weight: 800;
+        line-height: 1.15;
+        margin: 0 0 10px 0;
+    }
     .hero p {
         color: #F0F7FA !important;
         font-size: 15px;
@@ -432,8 +441,80 @@ st.markdown(
         color: #263442 !important;
     }
 
-    /* Hide Streamlit's built-in menu/footer. The Community Cloud Fork control
-       is platform-rendered and is not reliably controlled by app CSS. */
+    /* Alerts: always a light box with dark text, in light or dark mode. */
+    [data-testid="stAlert"],
+    [data-testid="stAlert"] > div,
+    [data-testid="stAlertContainer"],
+    [data-testid="stAlert"] [data-baseweb="notification"] {
+        background: #EAF2F8 !important;
+        border-color: #C5D8E6 !important;
+    }
+    [data-testid="stAlert"]:has([data-testid="stAlertContentWarning"]),
+    [data-testid="stAlert"]:has([data-testid="stAlertContentWarning"]) > div,
+    [data-testid="stAlert"]:has([data-testid="stAlertContentWarning"]) [data-testid="stAlertContainer"],
+    [data-testid="stAlert"]:has([data-testid="stAlertContentWarning"]) [data-baseweb="notification"] {
+        background: #FFF8E9 !important;
+        border-color: #EAD39D !important;
+    }
+    [data-testid="stAlert"]:has([data-testid="stAlertContentError"]),
+    [data-testid="stAlert"]:has([data-testid="stAlertContentError"]) > div,
+    [data-testid="stAlert"]:has([data-testid="stAlertContentError"]) [data-testid="stAlertContainer"],
+    [data-testid="stAlert"]:has([data-testid="stAlertContentError"]) [data-baseweb="notification"] {
+        background: #FDECEC !important;
+        border-color: #F2B8B5 !important;
+    }
+    [data-testid="stAlert"] *:not(svg):not(path) {
+        color: #1F2A37 !important;
+    }
+
+    /* Select boxes (any Streamlit version): white box, dark text. */
+    [data-baseweb="select"] > div {
+        background: #FFFFFF !important;
+        border-color: #C9D6DF !important;
+    }
+    [data-baseweb="select"] *,
+    [data-testid="stSelectbox"] * {
+        color: #17212B !important;
+        -webkit-text-fill-color: #17212B !important;
+    }
+    [data-baseweb="select"] svg {
+        fill: #526273 !important;
+    }
+
+    /* Bottom bar behind the chat input: match the light page. */
+    [data-testid="stBottom"],
+    [data-testid="stBottom"] > div,
+    [data-testid="stBottomBlockContainer"] {
+        background: #F4F7FA !important;
+    }
+
+    /* AI provider selector (replaces the old AI Engine card). */
+    .provider-label {
+        color: #526273 !important;
+        font-size: 12px;
+        font-weight: 700;
+        margin: 4px 0 6px 2px;
+    }
+    .provider-note {
+        color: #526273 !important;
+        font-size: 11px;
+        margin: 6px 0 0 2px;
+        overflow-wrap: anywhere;
+    }
+
+    /* Remove the Fork / GitHub / Deploy toolbar and the menu. */
+    [data-testid="stToolbar"],
+    [data-testid="stToolbarActions"],
+    [data-testid="stAppDeployButton"],
+    [data-testid="stMainMenu"],
+    [data-testid="stDecoration"],
+    .stDeployButton,
+    .stAppDeployButton,
+    .viewerBadge_container__r5tak,
+    [class*="viewerBadge"] {
+        display: none !important;
+        visibility: hidden !important;
+    }
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
     </style>
@@ -449,7 +530,23 @@ FEEDBACK_URL = (
     "https://docs.google.com/forms/d/e/"
     "1FAIpQLSdFPi-G7vvQmojacHAh1GXs1kjWcAtgp3M1x-XGHuYW_DEkQA/viewform?usp=header"
 )
-MODEL_NAME = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
+
+# AI providers the visitor can choose from. Models can be changed with the
+# GROQ_MODEL / OPENAI_MODEL environment variables or Streamlit secrets.
+def get_secret(name):
+    """Read a value from Streamlit Secrets, then from environment variables."""
+    value = None
+    try:
+        value = st.secrets.get(name)
+    except Exception:
+        pass
+    return value or os.getenv(name)
+
+
+PROVIDERS = {
+    "Groq": {"model": get_secret("GROQ_MODEL") or "openai/gpt-oss-20b"},
+    "OpenAI": {"model": get_secret("OPENAI_MODEL") or "gpt-5-mini"},
+}
 
 SYSTEM_PROMPT = """
 You are the MLT Medical AI Assistant, an educational assistant focused primarily
@@ -517,37 +614,47 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "pending_prompt" not in st.session_state:
     st.session_state.pending_prompt = None
+if "provider" not in st.session_state:
+    st.session_state.provider = "Groq"
 
 # =========================================================
-# GROQ CLIENT & RESPONSE
+# AI CLIENTS & RESPONSE
 # =========================================================
-def get_groq_client():
-    """Create the Groq client without exposing the API key."""
-    api_key = None
-    try:
-        api_key = st.secrets.get("GROQ_API_KEY")
-    except Exception:
-        pass
-    api_key = api_key or os.getenv("GROQ_API_KEY")
-    if not api_key:
-        return None
-    return Groq(api_key=api_key)
-
-
 def get_ai_response(conversation):
-    """Send the conversation to Groq and return the assistant response."""
-    client = get_groq_client()
-    if client is None:
-        raise RuntimeError(
-            "GROQ_API_KEY is not configured. Add it to Streamlit Secrets "
-            "or your environment variables."
+    """Send the conversation to the selected provider and return the reply."""
+    provider = st.session_state.get("provider", "Groq")
+    model = PROVIDERS[provider]["model"]
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}, *conversation]
+
+    if provider == "OpenAI":
+        api_key = get_secret("OPENAI_API_KEY")
+        if not api_key:
+            raise RuntimeError(
+                "OPENAI_API_KEY is not configured. Add it to Streamlit Secrets "
+                "or your environment variables."
+            )
+        from openai import OpenAI  # imported here so Groq still works without it
+
+        client = OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            max_completion_tokens=4000,
         )
-    response = client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=[{"role": "system", "content": SYSTEM_PROMPT}, *conversation],
-        temperature=0.4,
-        max_tokens=1800,
-    )
+    else:
+        api_key = get_secret("GROQ_API_KEY")
+        if not api_key:
+            raise RuntimeError(
+                "GROQ_API_KEY is not configured. Add it to Streamlit Secrets "
+                "or your environment variables."
+            )
+        client = Groq(api_key=api_key)
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=0.4,
+            max_tokens=1800,
+        )
     return response.choices[0].message.content or "I couldn't generate a response. Please try again."
 
 
@@ -563,7 +670,7 @@ def submit_user_message(message):
         st.session_state.messages.append({"role": "assistant", "content": answer})
     except Exception as error:
         # Avoid showing tracebacks or API credentials in the public interface.
-        st.error(f"Unable to generate a response. Please check your Groq API configuration and try again. Details: {error}")
+        st.error(f"Unable to generate a response. Please check your {st.session_state.get('provider', 'AI')} API configuration and try again. Details: {error}")
 
 
 # =========================================================
@@ -623,7 +730,7 @@ st.markdown(
     """
     <div class="hero">
         <div class="hero-eyebrow">Medical Laboratory Technology • AI Learning</div>
-        <h1>MLT Medical AI Assistant</h1>
+        <div class="hero-title">MLT Medical AI Assistant</div>
         <p>
             Explore laboratory science, understand diagnostic tests, prepare for
             examinations, and strengthen your MLT knowledge with an AI-powered
@@ -648,9 +755,8 @@ if page == "AI Assistant":
     cards = [
         ("CORE FOCUS", "MLT Education", "Laboratory science and diagnostics"),
         ("STUDY SUPPORT", "Notes & MCQs", "Concepts, revision and exam practice"),
-        ("AI ENGINE", MODEL_NAME, "Powered by Groq"),
     ]
-    for col, (label, value, note) in zip(metric_cols, cards):
+    for col, (label, value, note) in zip(metric_cols[:2], cards):
         with col:
             st.markdown(
                 f'<div class="info-card"><div class="card-label">{label}</div>'
@@ -658,6 +764,20 @@ if page == "AI Assistant":
                 f'<div class="card-note">{note}</div></div>',
                 unsafe_allow_html=True,
             )
+    with metric_cols[2]:
+        st.markdown('<div class="provider-label">AI PROVIDER</div>', unsafe_allow_html=True)
+        provider_names = list(PROVIDERS.keys())
+        selected_provider = st.selectbox(
+            "AI provider",
+            provider_names,
+            index=provider_names.index(st.session_state.provider),
+            label_visibility="collapsed",
+        )
+        st.session_state.provider = selected_provider
+        st.markdown(
+            f'<div class="provider-note">Model: {PROVIDERS[selected_provider]["model"]}</div>',
+            unsafe_allow_html=True,
+        )
 
     st.markdown("")
     st.markdown("#### Explore a topic")
