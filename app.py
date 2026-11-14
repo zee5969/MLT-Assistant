@@ -1,4 +1,13 @@
+import csv
+import datetime
+import hashlib
+import hmac
 import os
+import re
+import secrets as pysecrets
+import time
+
+import requests
 import streamlit as st
 from groq import Groq
 
@@ -502,6 +511,42 @@ st.markdown(
         overflow-wrap: anywhere;
     }
 
+    /* Thumbs up / down feedback under answers. */
+    [data-testid="stFeedback"] button,
+    [data-testid="stFeedback"] button * {
+        color: #526273 !important;
+    }
+    [data-testid="stFeedback"] button:hover,
+    [data-testid="stFeedback"] button:hover * {
+        color: #0D9488 !important;
+    }
+
+    /* Download button (admin area). */
+    .stDownloadButton > button {
+        border-radius: 11px !important;
+        border: 1px solid #C9D6DF !important;
+        background: #FFFFFF !important;
+        font-weight: 700 !important;
+    }
+    .stApp .stDownloadButton > button,
+    .stApp .stDownloadButton > button * {
+        color: #183246 !important;
+    }
+
+    /* Sign-in / Create account tabs. */
+    button[data-baseweb="tab"] p,
+    button[role="tab"] p {
+        color: #263442 !important;
+        font-weight: 600 !important;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] p,
+    button[role="tab"][aria-selected="true"] p {
+        color: #0B6B8A !important;
+    }
+    [data-baseweb="tab-highlight"] {
+        background-color: #0D9488 !important;
+    }
+
     /* Remove the Fork / GitHub / Deploy toolbar and the menu. */
     [data-testid="stToolbar"],
     [data-testid="stToolbarActions"],
@@ -625,6 +670,8 @@ if "pending_prompt" not in st.session_state:
     st.session_state.pending_prompt = None
 if "provider" not in st.session_state:
     st.session_state.provider = "Groq"
+if "feedback_sent" not in st.session_state:
+    st.session_state.feedback_sent = set()
 
 # =========================================================
 # AI CLIENTS & RESPONSE
@@ -634,6 +681,9 @@ def get_ai_response(conversation):
     provider = st.session_state.get("provider", "Groq")
     model = PROVIDERS[provider]["model"]
     messages = [{"role": "system", "content": SYSTEM_PROMPT}, *conversation]
+
+    if provider == "OpenAI" and not IS_PAID:
+        raise RuntimeError("OpenAI is available to paid members only. Please choose Groq.")
 
     if provider == "OpenAI":
         api_key = get_secret("OPENAI_API_KEY")
@@ -672,14 +722,419 @@ def submit_user_message(message):
     clean_message = message.strip()
     if not clean_message:
         return
+    if BLOCKED:
+        return
     st.session_state.messages.append({"role": "user", "content": clean_message})
     try:
         with st.spinner("Preparing an MLT-focused response..."):
             answer = get_ai_response(st.session_state.messages)
         st.session_state.messages.append({"role": "assistant", "content": answer})
+        if LIMITS_ACTIVE and not IS_PAID and USER:
+            add_usage(USER)
     except Exception as error:
         # Avoid showing tracebacks or API credentials in the public interface.
         st.error(f"Unable to generate a response. Please check your {st.session_state.get('provider', 'AI')} API configuration and try again. Details: {error}")
+
+
+# =========================================================
+# ANSWER FEEDBACK (thumbs up / thumbs down)
+# =========================================================
+FEEDBACK_FILE = "feedback_log.csv"
+FEEDBACK_HEADER = ["time_utc", "rating", "comment", "provider", "question", "answer"]
+
+
+def save_feedback(index, rating, comment=""):
+    """Append one feedback row (rating: 'up' or 'down') to a CSV file."""
+    messages = st.session_state.messages
+    if index >= len(messages):
+        return
+    question = ""
+    for j in range(index - 1, -1, -1):
+        if messages[j]["role"] == "user":
+            question = messages[j]["content"]
+            break
+    row = [
+        datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+        rating,
+        comment.strip(),
+        st.session_state.get("provider", ""),
+        question[:1000],
+        messages[index]["content"][:2000],
+    ]
+    new_file = not os.path.exists(FEEDBACK_FILE)
+    try:
+        with open(FEEDBACK_FILE, "a", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            if new_file:
+                writer.writerow(FEEDBACK_HEADER)
+            writer.writerow(row)
+    except OSError:
+        pass
+
+
+def on_thumb(index):
+    """Runs when a thumb is clicked under an answer."""
+    value = st.session_state.get(f"fb_{index}")
+    if value is None:
+        return
+    save_feedback(index, "up" if value == 1 else "down")
+
+
+def render_feedback(index):
+    """Show thumbs under an answer, plus an optional reason after thumbs down."""
+    selection = st.feedback(
+        "thumbs",
+        key=f"fb_{index}",
+        on_change=on_thumb,
+        args=(index,),
+    )
+    if selection == 1:
+        st.markdown('<div class="provider-note">Thanks for your feedback.</div>', unsafe_allow_html=True)
+    elif selection == 0:
+        if index in st.session_state.feedback_sent:
+            st.markdown('<div class="provider-note">Thanks, your feedback was sent.</div>', unsafe_allow_html=True)
+        else:
+            comment = st.text_area(
+                "What went wrong? (optional)",
+                key=f"fbc_{index}",
+                height=80,
+                placeholder="e.g. incorrect, too long, not what I asked",
+            )
+            if st.button("Send feedback", key=f"fbs_{index}"):
+                save_feedback(index, "down", comment)
+                st.session_state.feedback_sent.add(index)
+                st.rerun()
+
+
+# =========================================================
+# ACCOUNTS, MEMBERSHIP AND DAILY LIMIT
+# =========================================================
+# Accounts are stored in a free Supabase table. Sign-up/sign-in is switched on
+# only when SUPABASE_URL and SUPABASE_SERVICE_KEY exist in Streamlit Secrets.
+# Without them the app stays open for everyone, exactly as before.
+SUPABASE_URL = get_secret("SUPABASE_URL")
+SUPABASE_KEY = get_secret("SUPABASE_SERVICE_KEY")
+AUTH_ENABLED = bool(SUPABASE_URL and SUPABASE_KEY)
+LIMITS_ACTIVE = AUTH_ENABLED
+
+try:
+    FREE_LIMIT = int(get_secret("FREE_DAILY_LIMIT") or 5)
+except (TypeError, ValueError):
+    FREE_LIMIT = 5
+PAYMENT_DETAILS = get_secret("PAYMENT_DETAILS") or "Please contact the developer to get unlimited access."
+
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+MAX_FAILED_LOGINS = 5
+LOCK_MINUTES = 15
+
+
+def email_list(name):
+    """Read a comma-separated (or TOML list) secret as a set of lowercase emails."""
+    raw = get_secret(name) or ""
+    if isinstance(raw, (list, tuple)):
+        raw = ",".join(str(item) for item in raw)
+    return {item.strip().lower() for item in str(raw).replace("\n", ",").split(",") if item.strip()}
+
+
+def _today():
+    return datetime.datetime.now(datetime.timezone.utc).date().isoformat()
+
+
+# ---------- database (Supabase REST) ----------
+def db_request(method, params=None, payload=None):
+    url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/users"
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "return=representation",
+    }
+    try:
+        return requests.request(method, url, headers=headers, params=params, json=payload, timeout=15)
+    except requests.RequestException:
+        raise RuntimeError("Could not reach the account database. Please try again in a moment.")
+
+
+def db_get_user(email):
+    response = db_request("GET", params={"email": f"eq.{email}", "select": "*"})
+    if response.status_code != 200:
+        raise RuntimeError("The account database returned an error. Please try again.")
+    rows = response.json()
+    return rows[0] if rows else None
+
+
+def db_create_user(email, name, salt, password_hash):
+    response = db_request(
+        "POST",
+        payload={"email": email, "name": name, "salt": salt, "password_hash": password_hash},
+    )
+    if response.status_code == 409:
+        return False
+    if response.status_code not in (200, 201):
+        raise RuntimeError("Could not create the account. Please try again.")
+    return True
+
+
+def db_update_user(email, changes):
+    response = db_request("PATCH", params={"email": f"eq.{email}"}, payload=changes)
+    if response.status_code not in (200, 204):
+        raise RuntimeError("Could not save the change. Please try again.")
+    rows = response.json() if response.content else []
+    return rows[0] if rows else None
+
+
+# ---------- passwords ----------
+def hash_password(password, salt=None):
+    salt = salt or pysecrets.token_hex(16)
+    digest = hashlib.scrypt(
+        password.encode("utf-8"), salt=bytes.fromhex(salt), n=2**14, r=8, p=1, dklen=32
+    ).hex()
+    return salt, digest
+
+
+def password_matches(password, salt, expected_hash):
+    _, digest = hash_password(password, salt)
+    return hmac.compare_digest(digest, expected_hash)
+
+
+def _parse_time(value):
+    try:
+        return datetime.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+
+
+def _start_session(row):
+    st.session_state.auth_email = row["email"]
+    st.session_state.user_row = row
+    st.session_state.user_checked = time.time()
+
+
+def sign_up(name, email, password, confirm):
+    name = name.strip()
+    email = email.strip().lower()
+    if not name:
+        return False, "Please enter your name."
+    if not EMAIL_PATTERN.match(email):
+        return False, "Please enter a valid email address."
+    if len(password) < 8:
+        return False, "Your password must be at least 8 characters."
+    if password != confirm:
+        return False, "The two passwords do not match."
+    try:
+        salt, digest = hash_password(password)
+        if not db_create_user(email, name, salt, digest):
+            return False, "An account with this email already exists. Please sign in."
+        row = db_get_user(email)
+    except RuntimeError as error:
+        return False, str(error)
+    if not row:
+        return False, "Account created, but sign-in failed. Please sign in manually."
+    _start_session(row)
+    return True, ""
+
+
+def sign_in(email, password):
+    email = email.strip().lower()
+    generic = "Wrong email or password."
+    if not EMAIL_PATTERN.match(email) or not password:
+        return False, generic
+    try:
+        row = db_get_user(email)
+        if not row:
+            return False, generic
+        locked_until = _parse_time(row.get("locked_until"))
+        now = datetime.datetime.now(datetime.timezone.utc)
+        if locked_until and locked_until > now:
+            minutes = int((locked_until - now).total_seconds() // 60) + 1
+            return False, f"Too many failed attempts. Please try again in about {minutes} minute(s)."
+        if not password_matches(password, row["salt"], row["password_hash"]):
+            failed = int(row.get("failed_count") or 0) + 1
+            changes = {"failed_count": failed}
+            if failed >= MAX_FAILED_LOGINS:
+                changes = {
+                    "failed_count": 0,
+                    "locked_until": (now + datetime.timedelta(minutes=LOCK_MINUTES)).isoformat(),
+                }
+            db_update_user(email, changes)
+            return False, generic
+        updated = db_update_user(email, {"failed_count": 0, "locked_until": None})
+    except RuntimeError as error:
+        return False, str(error)
+    _start_session(updated or row)
+    return True, ""
+
+
+def logout_user():
+    for key in ("auth_email", "user_row", "user_checked"):
+        st.session_state.pop(key, None)
+    st.session_state.messages = []
+    st.session_state.pending_prompt = None
+
+
+def current_user():
+    """Return the signed-in member as a dict, or None."""
+    if not AUTH_ENABLED:
+        return None
+    email = st.session_state.get("auth_email")
+    if not email:
+        return None
+    row = st.session_state.get("user_row")
+    if row is None or time.time() - st.session_state.get("user_checked", 0) > 60:
+        try:
+            fresh = db_get_user(email)
+        except RuntimeError:
+            fresh = row  # database hiccup: keep the last known data
+        if fresh is None:
+            logout_user()  # account was deleted
+            return None
+        row = fresh
+        st.session_state.user_row = row
+        st.session_state.user_checked = time.time()
+    return {
+        "email": row["email"],
+        "name": row.get("name") or "",
+        "paid_until": row.get("paid_until"),
+        "used_date": row.get("used_date"),
+        "used_count": row.get("used_count") or 0,
+    }
+
+
+def get_usage(user):
+    """Questions asked today by this member."""
+    if user.get("used_date") == _today():
+        return int(user.get("used_count") or 0)
+    return 0
+
+
+def add_usage(user):
+    try:
+        row = db_update_user(user["email"], {"used_date": _today(), "used_count": get_usage(user) + 1})
+        if row:
+            st.session_state.user_row = row
+            st.session_state.user_checked = time.time()
+    except RuntimeError:
+        pass
+
+
+def admin_activate(email, days):
+    """Give a member paid access for a number of days (adds to any remaining time)."""
+    email = email.strip().lower()
+    try:
+        row = db_get_user(email)
+        if not row:
+            return False, "No account found with that email."
+        start = datetime.date.today()
+        if row.get("paid_until"):
+            try:
+                start = max(start, datetime.date.fromisoformat(str(row["paid_until"])))
+            except ValueError:
+                pass
+        until = start + datetime.timedelta(days=int(days))
+        db_update_user(email, {"paid_until": until.isoformat()})
+    except RuntimeError as error:
+        return False, str(error)
+    return True, f"Paid access for {email} is active until {until.isoformat()}."
+
+
+def admin_reset_password(email, new_password):
+    email = email.strip().lower()
+    if len(new_password) < 8:
+        return False, "The new password must be at least 8 characters."
+    try:
+        if not db_get_user(email):
+            return False, "No account found with that email."
+        salt, digest = hash_password(new_password)
+        db_update_user(email, {"salt": salt, "password_hash": digest, "failed_count": 0, "locked_until": None})
+    except RuntimeError as error:
+        return False, str(error)
+    return True, f"Password for {email} was reset."
+
+
+USER = current_user()
+IS_ADMIN = bool(USER and USER["email"] in email_list("ADMIN_EMAILS"))
+IS_PAID = (not LIMITS_ACTIVE) or IS_ADMIN or bool(
+    USER
+    and (
+        USER["email"] in email_list("PAID_EMAILS")
+        or (USER.get("paid_until") and str(USER["paid_until"]) >= _today())
+    )
+)
+BLOCKED = bool(LIMITS_ACTIVE and not IS_PAID and USER and get_usage(USER) >= FREE_LIMIT)
+
+
+def render_hero():
+    """Top banner shown on every page."""
+    st.markdown(
+        """
+        <div class="hero">
+            <div class="hero-eyebrow">Medical Laboratory Technology • AI Learning</div>
+            <div class="hero-title">MLT Medical AI Assistant</div>
+            <p>
+                Explore laboratory science, understand diagnostic tests, prepare for
+                examinations, and strengthen your MLT knowledge with an AI-powered
+                learning companion.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def show_paywall():
+    st.warning(
+        f"You have used your {FREE_LIMIT} free questions for today. "
+        "They reset every day at 5:00 AM Pakistan time.\n\n"
+        f"**Want unlimited access?** {PAYMENT_DETAILS}\n\n"
+        f"Your account email: **{USER['email']}**"
+    )
+
+
+# Sign-in / sign-up screen: nothing else is shown until the visitor is signed in.
+if AUTH_ENABLED and USER is None:
+    render_hero()
+    st.markdown('<div class="section-heading">Welcome</div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="section-subtitle">Sign in or create a free account to start learning. '
+        f'Free accounts get {FREE_LIMIT} questions per day.</div>',
+        unsafe_allow_html=True,
+    )
+    tab_in, tab_up = st.tabs(["Sign in", "Create account"])
+    with tab_in:
+        with st.form("signin_form"):
+            si_email = st.text_input("Email", key="si_email")
+            si_password = st.text_input("Password", type="password", key="si_password")
+            si_submit = st.form_submit_button("Sign in", type="primary", use_container_width=True)
+        if si_submit:
+            ok, message = sign_in(si_email, si_password)
+            if ok:
+                st.rerun()
+            else:
+                st.error(message)
+    with tab_up:
+        with st.form("signup_form"):
+            su_name = st.text_input("Your name", key="su_name")
+            su_email = st.text_input("Email", key="su_email")
+            su_password = st.text_input("Password (at least 8 characters)", type="password", key="su_password")
+            su_confirm = st.text_input("Confirm password", type="password", key="su_confirm")
+            su_submit = st.form_submit_button("Create free account", type="primary", use_container_width=True)
+        if su_submit:
+            ok, message = sign_up(su_name, su_email, su_password, su_confirm)
+            if ok:
+                st.rerun()
+            else:
+                st.error(message)
+    st.markdown(
+        """
+        <div class="disclaimer">
+            <strong>Educational use only:</strong> this assistant supports MLT learning.
+            It does not diagnose, prescribe, or replace a qualified healthcare professional.
+            Only your name, email and a securely hashed password are stored.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.stop()
 
 
 # =========================================================
@@ -711,30 +1166,61 @@ with st.sidebar:
     st.caption("Medical Laboratory Technology Student")
     st.caption("AI & Healthcare Technology Enthusiast")
     st.markdown("---")
+    if USER:
+        st.markdown(f"**{USER['name'] or USER['email']}**")
+        st.caption(USER["email"])
+        if IS_ADMIN:
+            st.caption("Admin · unlimited access")
+        elif IS_PAID:
+            st.caption("Paid member · unlimited access")
+        else:
+            left = max(FREE_LIMIT - get_usage(USER), 0)
+            st.caption(f"Free plan · {left} of {FREE_LIMIT} questions left today")
+        st.button("Log out", on_click=logout_user, use_container_width=True)
+        st.markdown("---")
+    if USER and IS_ADMIN:
+        st.markdown("### Admin")
+        admin_email = st.text_input("Member email", key="admin_email")
+        admin_days = st.number_input("Paid days", min_value=1, max_value=365, value=30, step=1, key="admin_days")
+        if st.button("Activate paid access", use_container_width=True, key="admin_activate_btn"):
+            ok, message = admin_activate(admin_email, admin_days)
+            (st.success if ok else st.error)(message)
+        admin_new_password = st.text_input("New password for this member", type="password", key="admin_new_password")
+        if st.button("Reset password", use_container_width=True, key="admin_reset_btn"):
+            ok, message = admin_reset_password(admin_email, admin_new_password)
+            (st.success if ok else st.error)(message)
+        st.markdown("---")
     if st.button("🗑️ Clear conversation", use_container_width=True):
         st.session_state.messages = []
         st.session_state.pending_prompt = None
         st.rerun()
     st.link_button("✉️ Share feedback", FEEDBACK_URL, use_container_width=True)
+    admin_unlocked = IS_ADMIN
+    if not admin_unlocked and st.query_params.get("admin") == "1" and get_secret("ADMIN_PASSWORD"):
+        st.markdown("---")
+        admin_entered = st.text_input("Admin password", type="password", key="admin_pw")
+        admin_unlocked = bool(admin_entered) and admin_entered == get_secret("ADMIN_PASSWORD")
+    if admin_unlocked:
+        if os.path.exists(FEEDBACK_FILE):
+            with open(FEEDBACK_FILE, "rb") as feedback_handle:
+                st.download_button(
+                    "⬇️ Download feedback (CSV)",
+                    data=feedback_handle.read(),
+                    file_name="feedback_log.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                )
+        else:
+            st.caption("No feedback yet.")
     st.caption("Educational support only • Not a diagnostic service")
 
 # =========================================================
 # MAIN HEADER
 # =========================================================
-st.markdown(
-    """
-    <div class="hero">
-        <div class="hero-eyebrow">Medical Laboratory Technology • AI Learning</div>
-        <div class="hero-title">MLT Medical AI Assistant</div>
-        <p>
-            Explore laboratory science, understand diagnostic tests, prepare for
-            examinations, and strengthen your MLT knowledge with an AI-powered
-            learning companion.
-        </p>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+render_hero()
+
+if BLOCKED:
+    show_paywall()
 
 # =========================================================
 # PAGE: AI ASSISTANT
@@ -761,7 +1247,9 @@ if page == "AI Assistant":
             )
     with metric_cols[2]:
         st.markdown('<div class="provider-label">AI PROVIDER</div>', unsafe_allow_html=True)
-        provider_names = list(PROVIDERS.keys())
+        provider_names = list(PROVIDERS.keys()) if IS_PAID else ["Groq"]
+        if st.session_state.provider not in provider_names:
+            st.session_state.provider = provider_names[0]
         selected_provider = st.selectbox(
             "AI provider",
             provider_names,
@@ -785,7 +1273,7 @@ if page == "AI Assistant":
     ]
     for index, (label, prompt) in enumerate(quick_prompts):
         with quick_cols[index % 2]:
-            if st.button(label, key=f"quick_{index}", use_container_width=True):
+            if st.button(label, key=f"quick_{index}", use_container_width=True, disabled=BLOCKED):
                 st.session_state.pending_prompt = prompt
                 st.rerun()
 
@@ -796,9 +1284,11 @@ if page == "AI Assistant":
             "Welcome! Ask me about an MLT subject, laboratory test, practical "
             "technique, viva question, or exam topic."
         )
-    for message in st.session_state.messages:
+    for index, message in enumerate(st.session_state.messages):
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
+            if message["role"] == "assistant":
+                render_feedback(index)
 
     if st.session_state.pending_prompt:
         prompt_to_send = st.session_state.pending_prompt
@@ -807,7 +1297,8 @@ if page == "AI Assistant":
         st.rerun()
 
     user_input = st.chat_input(
-        "Write a Message..."
+        "Write a Message...",
+        disabled=BLOCKED,
     )
     if user_input:
         submit_user_message(user_input)
@@ -852,6 +1343,7 @@ elif page == "Lab Result Explainer":
             "Explain this laboratory result",
             type="primary",
             use_container_width=True,
+            disabled=BLOCKED,
         )
 
     if submitted:
