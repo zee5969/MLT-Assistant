@@ -807,7 +807,7 @@ if page == "AI Assistant":
         st.rerun()
 
     user_input = st.chat_input(
-        "Ask about an MLT topic, laboratory test, or practical..."
+        "Write a Message..."
     )
     if user_input:
         submit_user_message(user_input)
