@@ -845,10 +845,13 @@ def db_request(method, params=None, payload=None):
     url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/users"
     headers = {
         "apikey": SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}",
         "Content-Type": "application/json",
         "Prefer": "return=representation",
     }
+    # New-style keys (sb_secret_...) go ONLY in the apikey header. Old-style
+    # JWT keys (service_role, start with "eyJ") are also sent as a Bearer token.
+    if str(SUPABASE_KEY).startswith("eyJ"):
+        headers["Authorization"] = f"Bearer {SUPABASE_KEY}"
     try:
         return requests.request(method, url, headers=headers, params=params, json=payload, timeout=15)
     except requests.RequestException:
