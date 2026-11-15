@@ -966,6 +966,39 @@ st.markdown(
     }
     .limit-bar strong { color: #FFFFFF !important; }
 
+    /* Sidebar chat list (like ChatGPT / Claude). */
+    .stApp [data-testid="stSidebar"] [class*="st-key-chat_"] button,
+    .stApp [data-testid="stSidebar"] [class*="st-key-del_"] button {
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        min-height: 36px !important;
+        justify-content: flex-start !important;
+        text-align: left !important;
+    }
+    .stApp [data-testid="stSidebar"] [class*="st-key-chat_"] button *,
+    .stApp [data-testid="stSidebar"] [class*="st-key-del_"] button * {
+        color: #E8F0F6 !important;
+        font-weight: 500 !important;
+        font-size: 13.5px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        text-align: left !important;
+    }
+    .stApp [data-testid="stSidebar"] [class*="st-key-chat_"] button:hover,
+    .stApp [data-testid="stSidebar"] [class*="st-key-del_"] button:hover {
+        background: rgba(255,255,255,.10) !important;
+    }
+    .stApp [data-testid="stSidebar"] [class*="st-key-del_"] button * {
+        color: #9FB4C6 !important;
+        justify-content: center !important;
+    }
+    .stApp [data-testid="stSidebar"] [class*="st-key-del_"] button:hover * {
+        color: #FFB4AE !important;
+    }
+    .recent-empty { color: #9FB4C6 !important; font-size: 12px; margin: 2px 0 8px 2px; }
+
     /* The invisible "stay signed in" script takes no space. */
     [data-testid="stHtml"]:has(script),
     [data-testid="stElementContainer"]:has([data-testid="stHtml"] script) {
@@ -1237,6 +1270,8 @@ def submit_user_message(message):
         st.session_state.messages.append({"role": "assistant", "content": answer})
         if LIMITS_ACTIVE and not IS_PAID and USER:
             add_usage(USER)
+        if USER:
+            save_current_chat(USER)
     except Exception as error:
         # Avoid showing tracebacks or API credentials in the public interface.
         # Saved (not shown here) because the page reruns right after this and would hide it.
@@ -1445,6 +1480,59 @@ def db_list_users():
     if response.status_code != 200:
         raise _db_error(response, "Could not load the member list.")
     return response.json()
+
+
+# ---------- chats (saved conversations, per member) ----------
+def db_list_chats(email, limit=30):
+    response = db_request(
+        "GET",
+        params={"email": f"eq.{email}", "select": "id,title,updated_at", "order": "updated_at.desc", "limit": str(limit)},
+        table="chats",
+    )
+    if response.status_code != 200:
+        raise _db_error(response, "Could not load chats")
+    return response.json()
+
+
+def db_get_chat_messages(email, chat_id):
+    response = db_request(
+        "GET", params={"id": f"eq.{chat_id}", "email": f"eq.{email}", "select": "messages"}, table="chats"
+    )
+    if response.status_code != 200:
+        raise _db_error(response, "Could not open the chat")
+    rows = response.json()
+    return rows[0]["messages"] if rows else None
+
+
+def db_create_chat(email, title, messages):
+    response = db_request(
+        "POST", payload={"email": email, "title": title, "messages": messages}, table="chats"
+    )
+    if response.status_code not in (200, 201):
+        raise _db_error(response, "Could not save the chat")
+    rows = response.json()
+    return rows[0] if rows else None
+
+
+def db_update_chat(email, chat_id, messages):
+    response = db_request(
+        "PATCH",
+        params={"id": f"eq.{chat_id}", "email": f"eq.{email}"},
+        payload={"messages": messages, "updated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")},
+        table="chats",
+    )
+    if response.status_code not in (200, 204):
+        raise _db_error(response, "Could not save the chat")
+    return True
+
+
+def db_delete_chat(email, chat_id):
+    response = db_request(
+        "DELETE", params={"id": f"eq.{chat_id}", "email": f"eq.{email}"}, table="chats"
+    )
+    if response.status_code not in (200, 204):
+        raise _db_error(response, "Could not delete the chat")
+    return True
 
 
 # ---------- payments (member sends details, admin approves) ----------
@@ -1762,6 +1850,110 @@ def logout_user():
     st.session_state.no_bridge = True  # do not sign straight back in
     st.session_state.messages = []
     st.session_state.pending_prompt = None
+    for key in ("chats_loaded", "chat_list", "chat_store", "current_chat", "chat_db_ok"):
+        st.session_state.pop(key, None)
+
+
+# ---------- chat history helpers ----------
+def _reset_chat_widgets():
+    for key in list(st.session_state.keys()):
+        if str(key).startswith(("fb_", "fbc_", "fbs_")):
+            del st.session_state[key]
+    st.session_state.feedback_sent = set()
+
+
+def make_chat_title(messages):
+    first = next((m["content"] for m in messages if m["role"] == "user"), "New chat")
+    if first.startswith("Please explain this laboratory result"):
+        match = re.search(r"^Test:\s*(.+)$", first, re.M)
+        return ("Lab result: " + match.group(1).strip())[:40] if match else "Lab result"
+    text = " ".join(first.split())
+    return text[:38] + "…" if len(text) > 40 else text
+
+
+def init_chats(user):
+    """Load this member's saved chats once per visit."""
+    if st.session_state.get("chats_loaded"):
+        return
+    st.session_state.chats_loaded = True
+    st.session_state.chat_list = []
+    st.session_state.chat_store = {}
+    st.session_state.current_chat = None
+    st.session_state.chat_db_ok = True
+    try:
+        st.session_state.chat_list = db_list_chats(user["email"])
+    except RuntimeError:
+        st.session_state.chat_db_ok = False  # chats table missing: keep chats for this visit only
+
+
+def save_current_chat(user):
+    """Save the open conversation to the member's chat list (and the database when available)."""
+    messages = st.session_state.get("messages") or []
+    if not messages or not user:
+        return
+    if not st.session_state.get("chats_loaded"):
+        init_chats(user)
+    now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+    cid = st.session_state.get("current_chat")
+    if cid is None:
+        title = make_chat_title(messages)
+        if st.session_state.chat_db_ok:
+            try:
+                row = db_create_chat(user["email"], title, messages)
+                cid = row["id"] if row else None
+            except RuntimeError:
+                st.session_state.chat_db_ok = False
+        if cid is None:
+            cid = f"L{int(time.time() * 1000)}"
+        st.session_state.current_chat = cid
+        st.session_state.chat_list.insert(0, {"id": cid, "title": title, "updated_at": now_iso})
+    else:
+        if isinstance(cid, int) and st.session_state.chat_db_ok:
+            try:
+                db_update_chat(user["email"], cid, messages)
+            except RuntimeError:
+                pass
+        existing = [c for c in st.session_state.chat_list if c["id"] == cid]
+        if existing:
+            st.session_state.chat_list = existing + [c for c in st.session_state.chat_list if c["id"] != cid]
+    st.session_state.chat_store[cid] = list(messages)
+
+
+def new_chat():
+    st.session_state.messages = []
+    st.session_state.current_chat = None
+    st.session_state.pending_prompt = None
+    st.session_state.last_error = None
+    st.session_state.goto_page = "AI Assistant"
+    _reset_chat_widgets()
+
+
+def open_chat(chat_id):
+    messages = st.session_state.get("chat_store", {}).get(chat_id)
+    if messages is None and isinstance(chat_id, int):
+        try:
+            messages = db_get_chat_messages(st.session_state.get("auth_email", ""), chat_id)
+        except RuntimeError:
+            messages = None
+    st.session_state.messages = list(messages or [])
+    st.session_state.chat_store[chat_id] = st.session_state.messages
+    st.session_state.current_chat = chat_id
+    st.session_state.pending_prompt = None
+    st.session_state.last_error = None
+    st.session_state.goto_page = "AI Assistant"
+    _reset_chat_widgets()
+
+
+def delete_chat(chat_id):
+    if isinstance(chat_id, int):
+        try:
+            db_delete_chat(st.session_state.get("auth_email", ""), chat_id)
+        except RuntimeError:
+            pass
+    st.session_state.chat_list = [c for c in st.session_state.get("chat_list", []) if c["id"] != chat_id]
+    st.session_state.get("chat_store", {}).pop(chat_id, None)
+    if st.session_state.get("current_chat") == chat_id:
+        new_chat()
 
 
 def _row_is_blocked(row):
@@ -2087,6 +2279,8 @@ if AUTH_ENABLED:
 USER = current_user()
 if AUTH_ENABLED:
     sync_cookie()
+if USER:
+    init_chats(USER)
 IS_ADMIN = bool(USER and USER["email"] in email_list("ADMIN_EMAILS"))
 IS_PAID = (not LIMITS_ACTIVE) or IS_ADMIN or bool(
     USER
@@ -2286,16 +2480,34 @@ with st.sidebar:
     )
     st.markdown("---")
     st.markdown("### Navigation")
+    if st.session_state.get("goto_page"):
+        st.session_state.page = st.session_state.pop("goto_page")
     page = st.radio(
         "Choose a workspace",
         ["AI Assistant", "Lab Result Explainer", "About the Project"] + (["Admin Dashboard"] if IS_ADMIN else []),
+        key="page",
         label_visibility="collapsed",
     )
     st.markdown("---")
-    st.markdown("### Developer")
-    st.markdown("**Zeeshan Ali**")
-    st.caption("AI & Healthcare Technology Enthusiast")
-    st.markdown("---")
+    st.button("＋ New chat", key="new_chat_btn", on_click=new_chat, use_container_width=True)
+    if USER:
+        st.markdown("### Recent chats")
+        recent_chats = st.session_state.get("chat_list", [])
+        if recent_chats:
+            for chat in recent_chats[:15]:
+                title_col, del_col = st.columns([5, 1.2])
+                is_open = chat["id"] == st.session_state.get("current_chat")
+                title_col.button(
+                    ("● " if is_open else "") + (chat.get("title") or "Chat"),
+                    key=f"chat_{chat['id']}",
+                    on_click=open_chat,
+                    args=(chat["id"],),
+                    use_container_width=True,
+                )
+                del_col.button("✕", key=f"del_{chat['id']}", on_click=delete_chat, args=(chat["id"],), help="Delete this chat")
+        else:
+            st.markdown('<div class="recent-empty">Your chats will appear here.</div>', unsafe_allow_html=True)
+        st.markdown("---")
     if USER:
         display_name = USER["name"] or USER["email"].split("@")[0]
         if IS_ADMIN:
@@ -2326,10 +2538,6 @@ with st.sidebar:
         if st.button("💎 Upgrade to unlimited", key="sidebar_upgrade", use_container_width=True):
             st.session_state.show_plans = True
             st.rerun()
-    if st.button("🗑️ Clear conversation", use_container_width=True):
-        st.session_state.messages = []
-        st.session_state.pending_prompt = None
-        st.rerun()
     st.caption("Educational support only • Not a diagnostic service")
 
 # =========================================================
@@ -2475,6 +2683,7 @@ Do not diagnose or prescribe. If the reference interval is missing, explain
 why interpretation is limited.
 """
             submit_user_message(lab_question)
+            st.session_state.goto_page = "AI Assistant"
             st.rerun()
 
     if st.session_state.get("last_error"):
