@@ -1025,7 +1025,7 @@ def get_secret(name):
 
 
 PROVIDERS = {
-    "Groq": {"model": get_secret("GROQ_MODEL") or "openai/gpt-oss-20b"},
+    "Groq": {"model": get_secret("GROQ_MODEL") or "llama-3.3-70b-versatile"},
     "OpenAI": {"model": get_secret("OPENAI_MODEL") or "gpt-5-mini"},
 }
 
@@ -1033,8 +1033,26 @@ SYSTEM_PROMPT = """
 You are the MLT Medical AI Assistant, an educational assistant focused primarily
 on Medical Laboratory Technology (MLT), laboratory medicine, and biomedical science.
 
+CONVERSATION AND IDENTITY
+- Reply naturally and directly to every message, including greetings and small
+  talk. "hi" gets a short greeting. "how are you" gets a friendly answer such as
+  "I'm doing well, thank you! How can I help you with MLT today?".
+- If the user asks about you ("who are you", "what are you", "what can you do",
+  "tell me about yourself"), explain briefly that you are the MLT Medical AI
+  Assistant, an AI study helper for Medical Laboratory Technology, and say what
+  you can help with (lab tests, notes, MCQs, viva questions, result explanations).
+  Do NOT mention the creator unless the user asks who made you.
+- If the user says your answer was wrong or did not answer their question,
+  apologise in one short sentence and answer their actual question.
+- If a message is not about MLT, answer it briefly and politely; you may add one
+  short line that your main focus is MLT and laboratory science. Do not refuse
+  harmless casual questions.
+- Never reply with a generic line such as "I'm here and ready to help" instead
+  of answering. Always answer what was asked.
+- Reply in the same language the user writes in (English, Urdu, Roman Urdu, etc.).
+
 CREATOR
-If asked who created, developed, built, or made you, answer:
+Only when the user asks who created, developed, built, or made you, answer:
 "I was developed by Zeeshan Ali, a Medical Laboratory Technology student and
 AI enthusiast. This project combines MLT education with artificial intelligence
 to support students and learners in understanding laboratory science."
@@ -1053,6 +1071,7 @@ CORE SUBJECT AREAS
 
 RESPONSE STYLE — ANSWER ONLY WHAT IS ASKED
 - Answer exactly what the user asked, directly, in the first sentence.
+- For casual messages, be warm and natural, not stiff.
 - Do not add background, extra sections, related topics, examples, or
   explanations the user did not ask for. Do not explain on your own.
 - Keep answers short by default. A direct question gets a direct answer
@@ -1114,12 +1133,12 @@ if "feedback_sent" not in st.session_state:
 # =========================================================
 def get_ai_response(conversation):
     """Send the conversation to the selected provider and return the reply."""
-    provider = st.session_state.get("provider", "Groq")
+    # Free members use Groq. Paid members and admins use OpenAI automatically
+    # once OPENAI_API_KEY exists; until then everyone uses Groq.
+    provider = "OpenAI" if (IS_PAID and get_secret("OPENAI_API_KEY")) else "Groq"
+    st.session_state.provider = provider
     model = PROVIDERS[provider]["model"]
     messages = [{"role": "system", "content": SYSTEM_PROMPT}, *conversation]
-
-    if provider == "OpenAI" and not IS_PAID:
-        raise RuntimeError("OpenAI is available to paid members only. Please choose Groq.")
 
     if provider == "OpenAI":
         api_key = get_secret("OPENAI_API_KEY")
@@ -1169,7 +1188,7 @@ def submit_user_message(message):
             add_usage(USER)
     except Exception as error:
         # Avoid showing tracebacks or API credentials in the public interface.
-        st.error(f"Unable to generate a response. Please check your {st.session_state.get('provider', 'AI')} API configuration and try again. Details: {error}")
+        st.error(f"Unable to generate a response right now. Please try again in a moment. Details: {error}")
 
 
 # =========================================================
@@ -2096,12 +2115,12 @@ if page == "AI Assistant":
         unsafe_allow_html=True,
     )
 
-    metric_cols = st.columns(3)
+    metric_cols = st.columns(2)
     cards = [
         ("CORE FOCUS", "MLT Education", "Laboratory science and diagnostics"),
         ("STUDY SUPPORT", "Notes & MCQs", "Concepts, revision and exam practice"),
     ]
-    for col, (label, value, note) in zip(metric_cols[:2], cards):
+    for col, (label, value, note) in zip(metric_cols, cards):
         with col:
             st.markdown(
                 f'<div class="info-card"><div class="card-label">{label}</div>'
@@ -2109,22 +2128,6 @@ if page == "AI Assistant":
                 f'<div class="card-note">{note}</div></div>',
                 unsafe_allow_html=True,
             )
-    with metric_cols[2]:
-        st.markdown('<div class="provider-label">AI PROVIDER</div>', unsafe_allow_html=True)
-        provider_names = ["Groq"] + (["OpenAI"] if (IS_PAID and get_secret("OPENAI_API_KEY")) else [])
-        if st.session_state.provider not in provider_names:
-            st.session_state.provider = provider_names[0]
-        selected_provider = st.selectbox(
-            "AI provider",
-            provider_names,
-            index=provider_names.index(st.session_state.provider),
-            label_visibility="collapsed",
-        )
-        st.session_state.provider = selected_provider
-        st.markdown(
-            f'<div class="provider-note">Model: {PROVIDERS[selected_provider]["model"]}</div>',
-            unsafe_allow_html=True,
-        )
 
     st.markdown("")
     st.markdown("#### Explore a topic")
