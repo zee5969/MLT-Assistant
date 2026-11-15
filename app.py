@@ -2174,7 +2174,10 @@ def render_admin_dashboard():
         payments = db_list_payments(limit=100)
     except RuntimeError as error:
         payments = None
-        st.warning(f"Payments are not set up yet (create the payments table in Supabase). {error}")
+        st.caption(
+            "Online payment requests are switched off (the payments table is not created). "
+            "You can still activate members above with “Activate / extend”."
+        )
     if payments is not None:
         pending = [p for p in payments if p.get("status") == "pending"]
         approved = [p for p in payments if p.get("status") == "approved"]
@@ -2360,11 +2363,17 @@ def _paywall_card_html():
 def _payment_form(prefix):
     """Member tells us they paid; also a button to refresh access after approval."""
     pending = []
+    table_ok = True
     try:
         pending = db_list_payments(email=USER["email"], status="pending")
     except RuntimeError:
-        pass
-    if pending:
+        table_ok = False  # payments table not created: use the simple WhatsApp / manual way
+    if not table_ok:
+        st.caption(
+            "After you pay, send your payment screenshot and your account email to the "
+            "developer. Your access starts after it is checked. Then press the button below."
+        )
+    elif pending:
         st.info(
             "Your payment details were received. Your access starts as soon as the developer "
             "approves them. Then press the refresh button below."
