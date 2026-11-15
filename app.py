@@ -342,8 +342,6 @@ st.markdown(
        FONT-COLOUR CONTRAST FIXES
        ===================================================== */
 
-    /* Sidebar headings (Navigation, Developer, Learning areas) were navy on a
-       navy sidebar — make them white. */
     .stApp [data-testid="stSidebar"] h1,
     .stApp [data-testid="stSidebar"] h2,
     .stApp [data-testid="stSidebar"] h3,
@@ -353,8 +351,6 @@ st.markdown(
         color: #FFFFFF !important;
     }
 
-    /* Sidebar buttons have a white background, so their label must be dark
-       (it was inheriting the light sidebar text colour = white on white). */
     .stApp [data-testid="stSidebar"] .stButton > button,
     .stApp [data-testid="stSidebar"] .stButton > button *,
     .stApp [data-testid="stSidebar"] .stLinkButton > a,
@@ -368,12 +364,10 @@ st.markdown(
         color: #08766F !important;
     }
 
-    /* Hero title stays white on the dark gradient. */
     .stApp .hero h1 {
         color: #FFFFFF !important;
     }
 
-    /* Main-page buttons: dark label on white, white label on primary. */
     .stApp [data-testid="stMain"] .stButton > button p,
     .stApp [data-testid="stMain"] .stLinkButton > a p {
         color: #183246 !important;
@@ -386,7 +380,6 @@ st.markdown(
         color: #FFFFFF !important;
     }
 
-    /* Header / toolbar icons on the light header bar. */
     [data-testid="stHeader"] button,
     [data-testid="stHeader"] a,
     [data-testid="stHeader"] svg {
@@ -394,12 +387,10 @@ st.markdown(
         fill: #17212B;
     }
 
-    /* Links in body text and chat answers. */
     .stApp [data-testid="stMain"] [data-testid="stMarkdownContainer"] a {
         color: #0B6B8A !important;
     }
 
-    /* Inline code, tables and quotes inside chat answers. */
     [data-testid="stChatMessage"] :not(pre) > code {
         color: #0B5C57 !important;
     }
@@ -414,14 +405,12 @@ st.markdown(
         font-weight: 700 !important;
     }
 
-    /* Alerts (st.info / st.warning / st.error). */
     [data-testid="stAlert"] p,
     [data-testid="stAlert"] li,
     [data-testid="stAlert"] span {
         color: #1F2A37 !important;
     }
 
-    /* Widget labels and input text (form page). */
     [data-testid="stWidgetLabel"] p,
     [data-testid="stWidgetLabel"] label {
         color: #263442 !important;
@@ -435,8 +424,6 @@ st.markdown(
         -webkit-text-fill-color: #17212B !important;
     }
 
-    /* Selectbox dropdown list: dark text needs a light list background
-       (the only non-font-colour line, required for readable options). */
     [data-baseweb="popover"] ul,
     [data-baseweb="popover"] [role="listbox"] {
         background: #FFFFFF !important;
@@ -448,13 +435,11 @@ st.markdown(
         color: #17212B !important;
     }
 
-    /* Spinner / progress text on the light page. */
     [data-testid="stSpinner"] p,
     [data-testid="stSpinner"] span {
         color: #263442 !important;
     }
 
-    /* Alerts: always a light box with dark text, in light or dark mode. */
     [data-testid="stAlert"],
     [data-testid="stAlert"] > div,
     [data-testid="stAlertContainer"],
@@ -480,7 +465,6 @@ st.markdown(
         color: #1F2A37 !important;
     }
 
-    /* Select boxes (any Streamlit version): white box, dark text. */
     [data-baseweb="select"] > div {
         background: #FFFFFF !important;
         border-color: #C9D6DF !important;
@@ -494,14 +478,12 @@ st.markdown(
         fill: #526273 !important;
     }
 
-    /* Bottom bar behind the chat input: match the light page. */
     [data-testid="stBottom"],
     [data-testid="stBottom"] > div,
     [data-testid="stBottomBlockContainer"] {
         background: #F4F7FA !important;
     }
 
-    /* AI provider selector (replaces the old AI Engine card). */
     .provider-label {
         color: #526273 !important;
         font-size: 12px;
@@ -515,7 +497,6 @@ st.markdown(
         overflow-wrap: anywhere;
     }
 
-    /* Thumbs up / down feedback under answers. */
     [data-testid="stFeedback"] button,
     [data-testid="stFeedback"] button * {
         color: #526273 !important;
@@ -525,7 +506,6 @@ st.markdown(
         color: #0D9488 !important;
     }
 
-    /* Download button (admin area). */
     .stDownloadButton > button {
         border-radius: 11px !important;
         border: 1px solid #C9D6DF !important;
@@ -537,7 +517,6 @@ st.markdown(
         color: #183246 !important;
     }
 
-    /* Chat box: one clean white rounded field (no dark frame). */
     [data-testid="stChatInput"],
     [data-testid="stChatInput"] > div,
     [data-testid="stChatInput"] div[data-baseweb],
@@ -552,7 +531,6 @@ st.markdown(
         border-radius: 14px !important;
     }
 
-    /* Text boxes: white with a soft border, and light helper buttons (eye / + / -). */
     [data-baseweb="input"],
     [data-baseweb="base-input"],
     [data-baseweb="textarea"] {
@@ -576,7 +554,6 @@ st.markdown(
         text-decoration: none !important;
     }
 
-    /* Admin dashboard tables and badges. */
     .admin-table-wrap {
         overflow-x: auto;
         background: #FFFFFF;
@@ -619,7 +596,6 @@ st.markdown(
     .badge-paid { background: #DDF5EE; color: #0B6B4F !important; }
     .badge-free { background: #EEF1F4; color: #526273 !important; }
 
-    /* Primary buttons (including form submit buttons) in any Streamlit version. */
     button[kind^="primary"],
     [data-testid="stBaseButton-primary"],
     [data-testid="stBaseButton-primaryFormSubmit"] {
@@ -634,7 +610,6 @@ st.markdown(
         -webkit-text-fill-color: #FFFFFF !important;
     }
 
-    /* Sign-in / Create account tabs. */
     button[data-baseweb="tab"] p,
     button[role="tab"] p {
         color: #263442 !important;
@@ -660,7 +635,6 @@ st.markdown(
        ===================================================== */
     html, .stApp { color-scheme: light; }
 
-    /* Input fields: soft blue-grey box, dark navy text, teal focus ring. */
     [data-baseweb="input"],
     [data-baseweb="textarea"],
     [data-testid="stSelectbox"] [data-baseweb="select"] > div {
@@ -701,8 +675,6 @@ st.markdown(
         caret-color: #0D9488 !important;
     }
 
-    /* Every layer inside a field gets the same light colour, so no dark frame can
-       show through (works whatever the browser or Streamlit theme is). */
     [data-testid="stTextInput"] div:not([data-testid="stWidgetLabel"]):not([data-testid="stWidgetLabel"] *),
     [data-testid="stNumberInput"] div:not([data-testid="stWidgetLabel"]):not([data-testid="stWidgetLabel"] *),
     [data-testid="stTextArea"] div:not([data-testid="stWidgetLabel"]):not([data-testid="stWidgetLabel"] *),
@@ -724,7 +696,6 @@ st.markdown(
         -webkit-text-fill-color: #10243A !important;
     }
 
-    /* Forms and bordered panels become clean white cards. */
     [data-testid="stForm"] {
         background: #FFFFFF !important;
         border: 1px solid #D8E1E8 !important;
@@ -742,7 +713,6 @@ st.markdown(
         padding: 10px 20px !important;
     }
 
-    /* Chat: member messages get a soft teal tint. */
     [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
         background: #EAF6F4 !important;
         border-color: #CDE7E3 !important;
@@ -753,7 +723,6 @@ st.markdown(
         margin: 10px 0 2px 2px;
     }
 
-    /* Sidebar account card. */
     .account-card {
         display: flex;
         align-items: center;
@@ -814,46 +783,113 @@ st.markdown(
         background: linear-gradient(90deg, #18A999, #5ED6C4);
     }
 
-    /* Free-limit message. */
-    .paywall {
-        background: #FFF8E9;
-        border: 1px solid #EAD39D;
-        border-left: 5px solid #D99A1B;
+    /* Free-limit upgrade card (dark, like a "keep chatting" popup). */
+    .upgrade-modal {
+        background: #262626;
+        border: 1px solid #3A3A3A;
+        border-radius: 22px;
+        padding: 30px 32px 26px 32px;
+        max-width: 660px;
+        margin: 8px auto 14px auto;
+        box-shadow: 0 22px 54px rgba(0,0,0,.30);
+    }
+    .upgrade-modal .um-title {
+        color: #FFFFFF !important;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 29px;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-bottom: 12px;
+    }
+    .upgrade-modal .um-sub {
+        color: #BDBDBD !important;
+        font-size: 15px;
+        line-height: 1.55;
+        margin-bottom: 22px;
+    }
+    .upgrade-modal .um-feature {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 8px 0;
+        font-size: 15px;
+    }
+    .upgrade-modal .um-feature .um-icon { font-size: 18px; width: 24px; text-align: center; }
+    .upgrade-modal .um-feature .um-text { color: #F1F1F1 !important; }
+    .upgrade-modal .um-plans { margin-top: 20px; }
+    .upgrade-modal .um-plan {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        background: #1C1C1C;
+        border: 1px solid #3A3A3A;
         border-radius: 14px;
-        padding: 18px 20px;
-        margin: 6px 0 12px 0;
+        padding: 16px 18px;
+        margin-top: 12px;
     }
-    .paywall .paywall-title {
-        color: #634713 !important;
-        font-family: 'Manrope', sans-serif;
-        font-weight: 800;
-        font-size: 17px;
-        margin-bottom: 6px;
+    .upgrade-modal .um-plan.selected {
+        background: #0A2540;
+        border-color: #1E5FBF;
     }
-    .paywall .paywall-text {
-        color: #634713 !important;
-        font-size: 14px;
-        line-height: 1.6;
-        margin-bottom: 10px;
+    .upgrade-modal .um-plan-left { display: flex; align-items: center; gap: 14px; }
+    .upgrade-modal .um-radio {
+        width: 24px;
+        height: 24px;
+        flex: 0 0 24px;
+        border-radius: 50%;
+        border: 2px solid #5A5A5A;
+        box-sizing: border-box;
     }
-    .paywall .paywall-box {
+    .upgrade-modal .um-plan.selected .um-radio {
+        border: 7px solid #2F7BF5;
         background: #FFFFFF;
-        border: 1px solid #EAD39D;
-        border-radius: 10px;
-        padding: 12px 14px;
-        color: #3F2E0B !important;
+    }
+    .upgrade-modal .um-plan-name { color: #FFFFFF !important; font-size: 17px; font-weight: 600; }
+    .upgrade-modal .um-plan-note { color: #B5B5B5 !important; font-size: 14px; margin-top: 2px; }
+    .upgrade-modal .um-plan-price { color: #FFFFFF !important; font-size: 17px; font-weight: 600; white-space: nowrap; }
+    .upgrade-modal .um-save {
+        display: inline-block;
+        margin-left: 8px;
+        padding: 1px 9px;
+        border-radius: 999px;
+        background: #12305A;
+        color: #6FA8FF !important;
+        font-size: 12px;
+        font-weight: 700;
+    }
+    .upgrade-modal .um-box {
+        margin-top: 18px;
+        background: #1C1C1C;
+        border: 1px dashed #4A4A4A;
+        border-radius: 12px;
+        padding: 13px 16px;
+        color: #E6E6E6 !important;
         font-size: 14px;
         line-height: 1.6;
     }
-    .paywall .paywall-box strong { color: #3F2E0B !important; }
-    .paywall .paywall-email {
-        color: #7A5B1E !important;
+    .upgrade-modal .um-box strong { color: #FFFFFF !important; }
+    .upgrade-modal .um-foot {
+        color: #9A9A9A !important;
         font-size: 12px;
-        margin-top: 10px;
+        text-align: center;
+        margin-top: 16px;
     }
+    .upgrade-modal .um-foot strong { color: #D0D0D0 !important; }
 
-    /* The invisible "stay signed in" script takes no space. */
-    [data-testid="stHtml"]:has(script) {
+    /* Hide the invisible script frames so they take no space. */
+    iframe[height="0"] {
+        display: none !important;
+    }
+    [data-testid="stCustomComponentV1"]:has(iframe[height="0"]),
+    [data-testid="stIFrame"]:has(iframe[height="0"]) {
+        height: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }
+    [data-testid="stElementContainer"]:has(iframe[height="0"]) {
         height: 0 !important;
         min-height: 0 !important;
         margin: 0 !important;
@@ -1137,6 +1173,9 @@ try:
 except (TypeError, ValueError):
     FREE_LIMIT = 5
 PAYMENT_DETAILS = get_secret("PAYMENT_DETAILS") or "Please contact the developer to get unlimited access."
+PRICE_MONTHLY = str(get_secret("PRICE_MONTHLY") or "").strip()
+PRICE_YEARLY = str(get_secret("PRICE_YEARLY") or "").strip()
+PAYMENT_URL = str(get_secret("PAYMENT_URL") or "").strip()
 
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 MAX_FAILED_LOGINS = 5
@@ -1268,8 +1307,15 @@ def _parse_time(value):
         return None
 
 
-# ---------- "stay signed in" cookie ----------
+# ---------- "stay signed in" after a page refresh ----------
+# The sign-in token is kept in three places so a refresh never logs you out:
+#   1. a browser cookie,
+#   2. the browser's localStorage (most reliable),
+#   3. a one-time ?mlt_t=... link used to hand the token from localStorage
+#      to the server after a refresh (it is removed from the address at once).
 SESSION_COOKIE = "mlt_session"
+STORAGE_KEY = "mlt_session"
+URL_PARAM = "mlt_t"
 SESSION_DAYS = 30
 
 
@@ -1308,47 +1354,91 @@ def read_session_token(token):
 
 
 def run_js(js):
-    """Run a small script in the browser (new Streamlit: st.html, older: hidden iframe)."""
-    try:
-        st.html(f"<script>{js}</script>", unsafe_allow_javascript=True)
-    except TypeError:
-        parent_js = js.replace("document.cookie", "window.parent.document.cookie").replace(
-            "location.protocol", "window.parent.location.protocol"
-        )
-        components.html(f"<script>{parent_js}</script>", height=0)
+    """Run a small script in the browser through a hidden frame (works on every Streamlit version).
+
+    Inside the frame, window.parent is the Streamlit page, so the script can reach
+    the page's cookies, localStorage and address.
+    """
+    components.html(f"<script>{js}</script>", height=0)
 
 
 def sync_cookie():
-    """Save the sign-in cookie after login, and remove it after logout."""
+    """Save the sign-in token in the browser after login, and remove it after logout."""
     token = st.session_state.get("session_cookie")
     clear = st.session_state.pop("clear_cookie", False)
-    secure = '+(location.protocol==="https:"?"; Secure":"")'
+    max_age = SESSION_DAYS * 86400
     if token:
         run_js(
-            f'(function(){{try{{document.cookie="{SESSION_COOKIE}={token}; path=/; '
-            f'max-age={SESSION_DAYS * 86400}; SameSite=Lax"{secure};}}catch(e){{}}}})();'
+            "(function(){try{var P=window.parent;"
+            f'var t="{token}";'
+            f'try{{P.localStorage.setItem("{STORAGE_KEY}",t);}}catch(e){{}}'
+            f'try{{P.document.cookie="{SESSION_COOKIE}="+t+"; path=/; max-age={max_age}; SameSite=Lax"'
+            '+(P.location.protocol==="https:"?"; Secure":"");}catch(e){}'
+            "}catch(e){}})();"
         )
     elif clear:
         run_js(
-            f'(function(){{try{{document.cookie="{SESSION_COOKIE}=; path=/; max-age=0; '
-            f'SameSite=Lax"{secure};}}catch(e){{}}}})();'
+            "(function(){try{var P=window.parent;"
+            f'try{{P.localStorage.removeItem("{STORAGE_KEY}");}}catch(e){{}}'
+            f'try{{P.document.cookie="{SESSION_COOKIE}=; path=/; max-age=0; SameSite=Lax"'
+            '+(P.location.protocol==="https:"?"; Secure":"");}catch(e){}'
+            "}catch(e){}})();"
         )
 
 
+def restore_bridge():
+    """On the sign-in screen: if the browser remembers a login, reload once with the token."""
+    if st.session_state.get("bridge_sent") or st.session_state.get("no_bridge"):
+        return
+    st.session_state.bridge_sent = True
+    run_js(
+        "(function(){try{var P=window.parent;"
+        f'var t=P.localStorage.getItem("{STORAGE_KEY}");'
+        "if(!t){return;}"
+        "var u=new URL(P.location.href);"
+        f'if(u.searchParams.get("{URL_PARAM}")){{return;}}'
+        f'u.searchParams.set("{URL_PARAM}",t);'
+        "P.location.replace(u.toString());"
+        "}catch(e){}})();"
+    )
+
+
 def restore_login():
-    """After a page refresh, sign the member back in from the cookie (once per visit)."""
+    """After a page refresh, sign the member back in (once per visit)."""
     if st.session_state.get("cookie_checked") or st.session_state.get("auth_email"):
         return
     st.session_state.cookie_checked = True
+
+    token = None
+    from_url = False
     try:
         token = st.context.cookies.get(SESSION_COOKIE)
     except Exception:
         token = None
+    try:
+        url_token = st.query_params.get(URL_PARAM)
+    except Exception:
+        url_token = None
+    if url_token:
+        from_url = True
+        if not token:
+            token = url_token
+        try:
+            del st.query_params[URL_PARAM]  # never leave the token in the address bar
+        except Exception:
+            pass
+
     if not token:
         return
     row = read_session_token(token)
+    if not row and from_url and url_token != token:
+        row = read_session_token(url_token)
     if row:
         _start_session(row)
+    else:
+        # Old / invalid token: remove it from the browser and do not retry.
+        st.session_state.clear_cookie = True
+        st.session_state.no_bridge = True
 
 
 def _start_session(row):
@@ -1357,6 +1447,7 @@ def _start_session(row):
     st.session_state.user_checked = time.time()
     st.session_state.session_cookie = make_session_token(row)
     st.session_state.cookie_checked = True
+    st.session_state.no_bridge = False
 
 
 def sign_up(name, email, password, confirm):
@@ -1419,6 +1510,7 @@ def logout_user():
         st.session_state.pop(key, None)
     st.session_state.clear_cookie = True
     st.session_state.cookie_checked = True
+    st.session_state.no_bridge = True  # do not sign straight back in
     st.session_state.messages = []
     st.session_state.pending_prompt = None
 
@@ -1718,22 +1810,57 @@ def render_hero():
 
 
 def show_paywall():
+    """Dark 'keep chatting' upgrade card shown when the free daily limit is used up."""
     details = html.escape(str(PAYMENT_DETAILS)).replace("\n", "<br>")
+    features = [
+        ("♾️", "Unlimited questions every day"),
+        ("🤖", "Access to the OpenAI model"),
+        ("📝", "Notes, MCQs and viva practice without limits"),
+        ("⚡", "Faster help from the developer"),
+    ]
+    feature_html = "".join(
+        f'<div class="um-feature"><span class="um-icon">{icon}</span>'
+        f'<span class="um-text">{html.escape(text)}</span></div>'
+        for icon, text in features
+    )
+
+    monthly_price = html.escape(PRICE_MONTHLY or "Contact developer")
+    plans_html = (
+        '<div class="um-plan selected"><div class="um-plan-left"><div class="um-radio"></div>'
+        '<div><div class="um-plan-name">Monthly</div>'
+        '<div class="um-plan-note">Billed monthly</div></div></div>'
+        f'<div class="um-plan-price">{monthly_price}</div></div>'
+    )
+    if PRICE_YEARLY:
+        plans_html += (
+            '<div class="um-plan"><div class="um-plan-left"><div class="um-radio"></div>'
+            '<div><div class="um-plan-name">Yearly<span class="um-save">Best value</span></div>'
+            '<div class="um-plan-note">Billed annually</div></div></div>'
+            f'<div class="um-plan-price">{html.escape(PRICE_YEARLY)}</div></div>'
+        )
+
     st.markdown(
-        '<div class="paywall">'
-        '<div class="paywall-title">Daily free limit reached</div>'
-        f'<div class="paywall-text">You have used all your free questions for today (limit: {FREE_LIMIT} per day). '
-        "They reset every day at 5:00 AM Pakistan time.</div>"
-        f'<div class="paywall-box"><strong>Want unlimited access?</strong><br>{details}</div>'
-        f'<div class="paywall-email">Your account email: <strong>{html.escape(USER["email"])}</strong></div>'
+        '<div class="upgrade-modal">'
+        '<div class="um-title">Keep chatting with MLT Assistant</div>'
+        f'<div class="um-sub">Your free questions ({FREE_LIMIT} per day) are finished. '
+        "They return at 5:00 AM Pakistan time, or keep going now with unlimited access.</div>"
+        f"{feature_html}"
+        f'<div class="um-plans">{plans_html}</div>'
+        f'<div class="um-box"><strong>How to get unlimited access</strong><br>{details}</div>'
+        f'<div class="um-foot">Your account email: <strong>{html.escape(USER["email"])}</strong></div>'
         "</div>",
         unsafe_allow_html=True,
     )
-    st.button("🔄 I have paid — refresh my access", key="refresh_access")
+    _, mid, _ = st.columns([1, 2.2, 1])
+    with mid:
+        if PAYMENT_URL:
+            st.link_button("Upgrade for unlimited access", PAYMENT_URL, use_container_width=True, type="primary")
+        st.button("🔄 I have paid — refresh my access", key="refresh_access", use_container_width=True)
 
 
 # Sign-in / sign-up screen: nothing else is shown until the visitor is signed in.
 if AUTH_ENABLED and USER is None:
+    restore_bridge()
     render_hero()
     _, center, _ = st.columns([1, 1.7, 1])
     with center:
