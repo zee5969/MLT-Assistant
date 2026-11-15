@@ -595,6 +595,9 @@ st.markdown(
     .badge-admin { background: #E3EEFA; color: #0B4F8A !important; }
     .badge-paid { background: #DDF5EE; color: #0B6B4F !important; }
     .badge-free { background: #EEF1F4; color: #526273 !important; }
+    .badge-pending { background: #FFF1CC; color: #7A5200 !important; }
+    .badge-approved { background: #DDF5EE; color: #0B6B4F !important; }
+    .badge-rejected { background: #FDE3E1; color: #9B2C25 !important; }
 
     button[kind^="primary"],
     [data-testid="stBaseButton-primary"],
@@ -963,6 +966,20 @@ st.markdown(
     }
     .limit-bar strong { color: #FFFFFF !important; }
 
+    /* The invisible "stay signed in" script takes no space. */
+    [data-testid="stHtml"]:has(script),
+    [data-testid="stElementContainer"]:has([data-testid="stHtml"] script) {
+        height: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        display: none !important;
+    }
+    iframe[height="1"] { display: none !important; }
+    [data-testid="stElementContainer"]:has(iframe[height="1"]) {
+        height: 0 !important; min-height: 0 !important; margin: 0 !important; overflow: hidden !important;
+    }
     /* Hide the invisible script frames so they take no space. */
     iframe[height="0"] {
         display: none !important;
@@ -1316,6 +1333,10 @@ PAYMENT_DETAILS = get_secret("PAYMENT_DETAILS") or "Please contact the developer
 PRICE_MONTHLY = str(get_secret("PRICE_MONTHLY") or "").strip()
 PRICE_YEARLY = str(get_secret("PRICE_YEARLY") or "").strip()
 PAYMENT_URL = str(get_secret("PAYMENT_URL") or "").strip()
+try:
+    PAID_DAYS = int(get_secret("PAID_DAYS") or 30)
+except (TypeError, ValueError):
+    PAID_DAYS = 30
 
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 MAX_FAILED_LOGINS = 5
@@ -1353,8 +1374,8 @@ def supabase_base_url():
     return f"{parts.scheme}://{host}"
 
 
-def db_request(method, params=None, payload=None):
-    url = f"{supabase_base_url()}/rest/v1/users"
+def db_request(method, params=None, payload=None, table="users"):
+    url = f"{supabase_base_url()}/rest/v1/{table}"
     headers = {
         "apikey": SUPABASE_KEY,
         "Content-Type": "application/json",
@@ -1426,6 +1447,82 @@ def db_list_users():
     return response.json()
 
 
+# ---------- payments (member sends details, admin approves) ----------
+def db_create_payment(email, method, txn_id, amount):
+    response = db_request(
+        "POST",
+        payload={"email": email, "method": method, "txn_id": txn_id, "amount": amount, "status": "pending"},
+        table="payments",
+    )
+    if response.status_code not in (200, 201):
+        raise _db_error(response, "Could not send your payment details. Please try again")
+    return True
+
+
+def db_list_payments(email=None, status=None, txn_id=None, limit=100):
+    params = {"select": "*", "order": "created_at.desc", "limit": str(limit)}
+    if email:
+        params["email"] = f"eq.{email}"
+    if status:
+        params["status"] = f"eq.{status}"
+    if txn_id:
+        params["txn_id"] = f"eq.{txn_id}"
+    response = db_request("GET", params=params, table="payments")
+    if response.status_code != 200:
+        raise _db_error(response, "Could not load payments")
+    return response.json()
+
+
+def db_update_payment(payment_id, changes):
+    response = db_request("PATCH", params={"id": f"eq.{payment_id}"}, payload=changes, table="payments")
+    if response.status_code not in (200, 204):
+        raise _db_error(response, "Could not save the payment change")
+    return True
+
+
+def submit_payment_request(user, method, txn_id, amount):
+    """A member tells us they paid. The developer approves it in the Admin Dashboard."""
+    txn_id = txn_id.strip()
+    amount = amount.strip()
+    if len(txn_id) < 4:
+        return False, "Please enter the transaction ID from your payment message."
+    try:
+        if db_list_payments(email=user["email"], status="pending"):
+            return False, "You already sent your payment details. Please wait for approval."
+        if [p for p in db_list_payments(txn_id=txn_id) if p.get("status") != "rejected"]:
+            return False, "This transaction ID was already used. Please check it and try again."
+        db_create_payment(user["email"], method, txn_id[:80], amount[:40])
+    except RuntimeError as error:
+        return False, str(error)
+    return True, "Thank you! Your payment details were received. Your access starts as soon as they are approved."
+
+
+def admin_approve_payment(payment, days):
+    ok, message = admin_activate(payment["email"], days)
+    if not ok:
+        return False, message
+    try:
+        db_update_payment(
+            payment["id"],
+            {
+                "status": "approved",
+                "days": int(days),
+                "approved_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+            },
+        )
+    except RuntimeError as error:
+        return False, f"Access was given, but the payment record was not updated. {error}"
+    return True, message
+
+
+def admin_reject_payment(payment_id):
+    try:
+        db_update_payment(payment_id, {"status": "rejected"})
+    except RuntimeError as error:
+        return False, str(error)
+    return True, "Payment rejected."
+
+
 # ---------- passwords ----------
 def hash_password(password, salt=None):
     salt = salt or pysecrets.token_hex(16)
@@ -1494,12 +1591,24 @@ def read_session_token(token):
 
 
 def run_js(js):
-    """Run a small script in the browser through a hidden frame (works on every Streamlit version).
-
-    Inside the frame, window.parent is the Streamlit page, so the script can reach
-    the page's cookies, localStorage and address.
-    """
-    components.html(f"<script>{js}</script>", height=0)
+    """Run a small script in the browser. Newest Streamlit: st.html (runs in the page itself);
+    otherwise a hidden frame where window.parent is the page. Never stops the app on failure."""
+    try:
+        st.html(f"<script>{js.replace('window.parent', 'window')}</script>", unsafe_allow_javascript=True)
+        return
+    except Exception:
+        pass
+    page = f"<script>{js}</script>"
+    try:
+        if hasattr(st, "iframe"):
+            st.iframe(page, height=1)
+            return
+    except Exception:
+        pass
+    try:
+        components.html(page, height=0)
+    except Exception:
+        pass
 
 
 def sync_cookie():
@@ -1868,6 +1977,64 @@ def render_admin_dashboard():
                 st.session_state.admin_notice = admin_reset_password(chosen_reset, new_password)
                 st.rerun()
 
+    st.markdown("#### Payments")
+    try:
+        payments = db_list_payments(limit=100)
+    except RuntimeError as error:
+        payments = None
+        st.warning(f"Payments are not set up yet (create the payments table in Supabase). {error}")
+    if payments is not None:
+        pending = [p for p in payments if p.get("status") == "pending"]
+        approved = [p for p in payments if p.get("status") == "approved"]
+        pc1, pc2, pc3 = st.columns(3)
+        with pc1:
+            st.markdown(_stat_card("WAITING", str(len(pending)), "Payments to approve"), unsafe_allow_html=True)
+        with pc2:
+            st.markdown(_stat_card("APPROVED", str(len(approved)), "Paid and activated"), unsafe_allow_html=True)
+        with pc3:
+            st.markdown(_stat_card("ALL REQUESTS", str(len(payments)), "Latest 100"), unsafe_allow_html=True)
+        names = {str(m.get("email", "")).lower(): (m.get("name") or "") for m in members}
+        if pending:
+            st.markdown("**Waiting for your approval**")
+            for p in pending[:20]:
+                email_p = str(p.get("email", ""))
+                with st.container(border=True):
+                    info, ok_col, no_col = st.columns([4, 1.3, 1.1])
+                    with info:
+                        st.markdown(f"**{names.get(email_p.lower()) or email_p}** ({email_p})")
+                        st.caption(
+                            f"{p.get('method') or '-'} · Transaction ID: {p.get('txn_id') or '-'} · "
+                            f"Amount: {p.get('amount') or '-'} · {str(p.get('created_at') or '')[:16].replace('T', ' ')}"
+                        )
+                    if ok_col.button(f"Approve {PAID_DAYS} days", key=f"pay_ok_{p['id']}", use_container_width=True):
+                        st.session_state.admin_notice = admin_approve_payment(p, PAID_DAYS)
+                        st.rerun()
+                    if no_col.button("Reject", key=f"pay_no_{p['id']}", use_container_width=True):
+                        st.session_state.admin_notice = admin_reject_payment(p["id"])
+                        st.rerun()
+        if payments:
+            st.markdown("**Payment history**")
+            st.markdown(
+                _html_table(
+                    ["Time (UTC)", "Member", "Method", "Transaction ID", "Amount", "Status"],
+                    [
+                        [
+                            html.escape(str(p.get("created_at") or "")[:16].replace("T", " ")),
+                            html.escape(names.get(str(p.get("email", "")).lower()) or str(p.get("email", ""))),
+                            html.escape(str(p.get("method") or "—")),
+                            html.escape(str(p.get("txn_id") or "—")),
+                            html.escape(str(p.get("amount") or "—")),
+                            f'<span class="badge badge-{html.escape(str(p.get("status") or "pending"))}">'
+                            f'{html.escape(str(p.get("status") or "pending").title())}</span>',
+                        ]
+                        for p in payments[:50]
+                    ],
+                ),
+                unsafe_allow_html=True,
+            )
+        else:
+            st.caption("No payments yet.")
+
     st.markdown("#### Feedback")
     feedback_rows = []
     if os.path.exists(FEEDBACK_FILE):
@@ -1978,10 +2145,16 @@ def _paywall_card_html():
             '<div class="um-plan-note">Billed annually</div></div></div>'
             f'<div class="um-plan-price">{html.escape(PRICE_YEARLY)}</div></div>'
         )
+    if BLOCKED:
+        intro_text = (
+            f"Your free questions ({FREE_LIMIT} per day) are finished. "
+            "They return at 5:00 AM Pakistan time, or keep going now with unlimited access."
+        )
+    else:
+        intro_text = "Get unlimited questions every day. Pay, send your transaction ID below, and your access starts after approval."
     return (
         '<div class="upgrade-modal in-dialog">'
-        f'<div class="um-sub">Your free questions ({FREE_LIMIT} per day) are finished. '
-        "They return at 5:00 AM Pakistan time, or keep going now with unlimited access.</div>"
+        f'<div class="um-sub">{intro_text}</div>'
         f"{feature_html}"
         f'<div class="um-plans">{plans_html}</div>'
         f'<div class="um-box"><strong>How to get unlimited access</strong><br>{details}</div>'
@@ -1990,22 +2163,47 @@ def _paywall_card_html():
     )
 
 
+def _payment_form(prefix):
+    """Member tells us they paid; also a button to refresh access after approval."""
+    pending = []
+    try:
+        pending = db_list_payments(email=USER["email"], status="pending")
+    except RuntimeError:
+        pass
+    if pending:
+        st.info(
+            "Your payment details were received. Your access starts as soon as the developer "
+            "approves them. Then press the refresh button below."
+        )
+    else:
+        with st.form(f"pay_form_{prefix}"):
+            method = st.selectbox("I paid with", ["Easypaisa", "JazzCash", "Bank transfer", "Other"])
+            txn_id = st.text_input("Transaction ID", placeholder="From your payment message")
+            amount = st.text_input("Amount paid", placeholder="e.g. 500")
+            sent = st.form_submit_button("Send payment details", type="primary", use_container_width=True)
+        if sent:
+            ok, message = submit_payment_request(USER, method, txn_id, amount)
+            (st.success if ok else st.error)(message)
+    st.button("🔄 Refresh my access", key=f"refresh_access_{prefix}", use_container_width=True)
+
+
 def _paywall_dialog_body():
     st.markdown(_paywall_card_html(), unsafe_allow_html=True)
     if PAYMENT_URL:
-        st.link_button("Upgrade for unlimited access", PAYMENT_URL, use_container_width=True, type="primary")
-    st.button("🔄 I have paid — refresh my access", key="refresh_access", use_container_width=True)
+        st.link_button("Pay now", PAYMENT_URL, use_container_width=True, type="primary")
+    _payment_form("dlg")
 
 
 def show_paywall():
-    """When the free limit is used up, open an upgrade popup in front of the page."""
-    st.markdown(
-        '<div class="limit-bar"><strong>Daily free limit reached.</strong> '
-        "Your questions return at 5:00 AM Pakistan time, or upgrade for unlimited access.</div>",
-        unsafe_allow_html=True,
-    )
-    st.button("View plans", key="view_plans")
-    title = "Keep chatting with MLT Assistant"
+    """Open the upgrade popup in front of the page (automatically when the limit is used up)."""
+    if BLOCKED:
+        st.markdown(
+            '<div class="limit-bar"><strong>Daily free limit reached.</strong> '
+            "Your questions return at 5:00 AM Pakistan time, or upgrade for unlimited access.</div>",
+            unsafe_allow_html=True,
+        )
+        st.button("View plans", key="view_plans")
+    title = "Keep chatting with MLT Assistant" if BLOCKED else "Upgrade to unlimited"
     dialog_decorator = getattr(st, "dialog", None) or getattr(st, "experimental_dialog", None)
     if dialog_decorator is not None:
         try:
@@ -2016,8 +2214,8 @@ def show_paywall():
     # Very old Streamlit without popups: show the card on the page instead.
     st.markdown(_paywall_card_html().replace(" in-dialog", ""), unsafe_allow_html=True)
     if PAYMENT_URL:
-        st.link_button("Upgrade for unlimited access", PAYMENT_URL, type="primary")
-    st.button("🔄 I have paid — refresh my access", key="refresh_access")
+        st.link_button("Pay now", PAYMENT_URL, type="primary")
+    _payment_form("page")
 
 
 # Sign-in / sign-up screen: nothing else is shown until the visitor is signed in.
@@ -2124,6 +2322,10 @@ with st.sidebar:
         )
         st.button("Log out", on_click=logout_user, use_container_width=True)
         st.markdown("---")
+    if USER and not IS_PAID:
+        if st.button("💎 Upgrade to unlimited", key="sidebar_upgrade", use_container_width=True):
+            st.session_state.show_plans = True
+            st.rerun()
     if st.button("🗑️ Clear conversation", use_container_width=True):
         st.session_state.messages = []
         st.session_state.pending_prompt = None
@@ -2136,7 +2338,7 @@ with st.sidebar:
 # =========================================================
 render_hero()
 
-if BLOCKED:
+if BLOCKED or st.session_state.pop("show_plans", False):
     show_paywall()
 
 # =========================================================
