@@ -785,8 +785,8 @@ st.markdown(
 
     /* Free-limit upgrade card (dark, like a "keep chatting" popup). */
     .upgrade-modal {
-        background: #262626;
-        border: 1px solid #3A3A3A;
+        background: #10243A;
+        border: 1px solid #2C4A63;
         border-radius: 22px;
         padding: 30px 32px 26px 32px;
         max-width: 660px;
@@ -795,14 +795,14 @@ st.markdown(
     }
     .upgrade-modal .um-title {
         color: #FFFFFF !important;
-        font-family: Georgia, 'Times New Roman', serif;
+        font-family: 'Manrope', sans-serif;
         font-size: 29px;
         font-weight: 700;
         line-height: 1.2;
         margin-bottom: 12px;
     }
     .upgrade-modal .um-sub {
-        color: #BDBDBD !important;
+        color: #C6D4E0 !important;
         font-size: 15px;
         line-height: 1.55;
         margin-bottom: 22px;
@@ -815,22 +815,22 @@ st.markdown(
         font-size: 15px;
     }
     .upgrade-modal .um-feature .um-icon { font-size: 18px; width: 24px; text-align: center; }
-    .upgrade-modal .um-feature .um-text { color: #F1F1F1 !important; }
+    .upgrade-modal .um-feature .um-text { color: #F3F7FB !important; }
     .upgrade-modal .um-plans { margin-top: 20px; }
     .upgrade-modal .um-plan {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-        background: #1C1C1C;
-        border: 1px solid #3A3A3A;
+        background: #163550;
+        border: 1px solid #2C4A63;
         border-radius: 14px;
         padding: 16px 18px;
         margin-top: 12px;
     }
     .upgrade-modal .um-plan.selected {
-        background: #0A2540;
-        border-color: #1E5FBF;
+        background: #0E4450;
+        border-color: #18A999;
     }
     .upgrade-modal .um-plan-left { display: flex; align-items: center; gap: 14px; }
     .upgrade-modal .um-radio {
@@ -838,69 +838,78 @@ st.markdown(
         height: 24px;
         flex: 0 0 24px;
         border-radius: 50%;
-        border: 2px solid #5A5A5A;
+        border: 2px solid #5F7C95;
         box-sizing: border-box;
     }
     .upgrade-modal .um-plan.selected .um-radio {
-        border: 7px solid #2F7BF5;
+        border: 7px solid #18A999;
         background: #FFFFFF;
     }
     .upgrade-modal .um-plan-name { color: #FFFFFF !important; font-size: 17px; font-weight: 600; }
-    .upgrade-modal .um-plan-note { color: #B5B5B5 !important; font-size: 14px; margin-top: 2px; }
+    .upgrade-modal .um-plan-note { color: #B4C6D6 !important; font-size: 14px; margin-top: 2px; }
     .upgrade-modal .um-plan-price { color: #FFFFFF !important; font-size: 17px; font-weight: 600; white-space: nowrap; }
     .upgrade-modal .um-save {
         display: inline-block;
         margin-left: 8px;
         padding: 1px 9px;
         border-radius: 999px;
-        background: #12305A;
-        color: #6FA8FF !important;
+        background: #0F5F58;
+        color: #BFF3EA !important;
         font-size: 12px;
         font-weight: 700;
     }
     .upgrade-modal .um-box {
         margin-top: 18px;
-        background: #1C1C1C;
-        border: 1px dashed #4A4A4A;
+        background: #163550;
+        border: 1px dashed #3F6280;
         border-radius: 12px;
         padding: 13px 16px;
-        color: #E6E6E6 !important;
+        color: #E8F0F6 !important;
         font-size: 14px;
         line-height: 1.6;
     }
     .upgrade-modal .um-box strong { color: #FFFFFF !important; }
     .upgrade-modal .um-foot {
-        color: #9A9A9A !important;
+        color: #9FB4C6 !important;
         font-size: 12px;
         text-align: center;
         margin-top: 16px;
     }
-    .upgrade-modal .um-foot strong { color: #D0D0D0 !important; }
+    .upgrade-modal .um-foot strong { color: #D6E2EC !important; }
 
     /* Popup window (opens in front of the page, like ChatGPT / Claude). */
     div[role="dialog"] {
-        background: #262626 !important;
-        border: 1px solid #3A3A3A !important;
+        background: #10243A !important;
+        border: 1px solid #2C4A63 !important;
         border-radius: 22px !important;
         box-shadow: 0 30px 80px rgba(0,0,0,.55) !important;
+        max-width: 620px !important;
+        width: 92vw !important;
+        margin: 0 auto !important;
     }
     div[role="dialog"] h1, div[role="dialog"] h2, div[role="dialog"] h3,
     div[role="dialog"] [data-testid="stHeading"] * {
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
-        font-family: Georgia, 'Times New Roman', serif !important;
+        font-family: 'Manrope', sans-serif !important;
         font-size: 28px !important;
         font-weight: 700 !important;
     }
     div[role="dialog"] button[aria-label="Close"],
     div[role="dialog"] button[aria-label="Close"] * {
-        color: #D0D0D0 !important;
-        fill: #D0D0D0 !important;
+        color: #D6E2EC !important;
+        fill: #D6E2EC !important;
         background: transparent !important;
     }
     div[data-testid="stModal"], div[data-baseweb="modal"] {
         background: rgba(0,0,0,.62) !important;
     }
+    div[role="dialog"] .stButton > button {
+        background: #FFFFFF !important;
+        border: 0 !important;
+        min-height: 46px;
+    }
+    div[role="dialog"] .stButton > button p { color: #10243A !important; }
     .upgrade-modal.in-dialog {
         background: transparent !important;
         border: 0 !important;
@@ -910,12 +919,12 @@ st.markdown(
         max-width: 100% !important;
     }
     .limit-bar {
-        background: #262626;
-        border: 1px solid #3A3A3A;
+        background: #10243A;
+        border: 1px solid #2C4A63;
         border-radius: 14px;
         padding: 14px 18px;
         margin: 0 0 12px 0;
-        color: #F1F1F1 !important;
+        color: #F3F7FB !important;
         font-size: 14px;
     }
     .limit-bar strong { color: #FFFFFF !important; }
@@ -1911,7 +1920,7 @@ def show_paywall():
     dialog_decorator = getattr(st, "dialog", None) or getattr(st, "experimental_dialog", None)
     if dialog_decorator is not None:
         try:
-            dialog_decorator(title, width="large")(_paywall_dialog_body)()
+            dialog_decorator(title, width="medium")(_paywall_dialog_body)()
             return
         except Exception:
             pass
