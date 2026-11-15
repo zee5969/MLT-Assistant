@@ -2330,7 +2330,6 @@ with st.sidebar:
         st.session_state.messages = []
         st.session_state.pending_prompt = None
         st.rerun()
-    st.link_button("✉️ Share feedback", FEEDBACK_URL, use_container_width=True)
     st.caption("Educational support only • Not a diagnostic service")
 
 # =========================================================
