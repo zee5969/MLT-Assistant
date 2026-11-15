@@ -699,6 +699,29 @@ st.markdown(
         caret-color: #0D9488 !important;
     }
 
+    /* Every layer inside a field gets the same light colour, so no dark frame can
+       show through (works whatever the browser or Streamlit theme is). */
+    [data-testid="stTextInput"] div:not([data-testid="stWidgetLabel"]):not([data-testid="stWidgetLabel"] *),
+    [data-testid="stNumberInput"] div:not([data-testid="stWidgetLabel"]):not([data-testid="stWidgetLabel"] *),
+    [data-testid="stTextArea"] div:not([data-testid="stWidgetLabel"]):not([data-testid="stWidgetLabel"] *),
+    [data-testid="stSelectbox"] div:not([data-testid="stWidgetLabel"]):not([data-testid="stWidgetLabel"] *) {
+        background-color: #EEF4F8 !important;
+    }
+    [data-testid="stTextInput"] input,
+    [data-testid="stNumberInput"] input,
+    [data-testid="stTextArea"] textarea,
+    [data-testid="stSelectbox"] input {
+        background-color: transparent !important;
+        color: #10243A !important;
+        -webkit-text-fill-color: #10243A !important;
+        opacity: 1 !important;
+    }
+    [data-testid="stSelectbox"] [data-baseweb="select"] div,
+    [data-testid="stSelectbox"] [data-baseweb="select"] span {
+        color: #10243A !important;
+        -webkit-text-fill-color: #10243A !important;
+    }
+
     /* Forms and bordered panels become clean white cards. */
     [data-testid="stForm"] {
         background: #FFFFFF !important;
@@ -1107,6 +1130,10 @@ PAYMENT_DETAILS = get_secret("PAYMENT_DETAILS") or "Please contact the developer
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 MAX_FAILED_LOGINS = 5
 LOCK_MINUTES = 15
+
+
+def _questions(n):
+    return f"{n} question" + ("" if n == 1 else "s")
 
 
 def email_list(name):
@@ -1593,7 +1620,7 @@ def show_paywall():
     st.markdown(
         '<div class="paywall">'
         '<div class="paywall-title">Daily free limit reached</div>'
-        f'<div class="paywall-text">You have used your {FREE_LIMIT} free questions for today. '
+        f'<div class="paywall-text">You have used all your free questions for today (limit: {FREE_LIMIT} per day). '
         "They reset every day at 5:00 AM Pakistan time.</div>"
         f'<div class="paywall-box"><strong>Want unlimited access?</strong><br>{details}</div>'
         f'<div class="paywall-email">Your account email: <strong>{html.escape(USER["email"])}</strong></div>'
@@ -1611,7 +1638,7 @@ if AUTH_ENABLED and USER is None:
         st.markdown('<div class="section-heading">Welcome</div>', unsafe_allow_html=True)
         st.markdown(
             f'<div class="section-subtitle">Sign in to your account, or create a free one in seconds. '
-            f'Free accounts include {FREE_LIMIT} questions per day.</div>',
+            f'Free plan: {_questions(FREE_LIMIT)} per day.</div>',
             unsafe_allow_html=True,
         )
         tab_in, tab_up = st.tabs(["Sign in", "Create account"])
@@ -1691,7 +1718,7 @@ with st.sidebar:
             left = max(FREE_LIMIT - get_usage(USER), 0)
             percent = int(100 * left / max(FREE_LIMIT, 1))
             plan_key, plan_label = "free", "Free plan"
-            plan_note = f"{left} of {FREE_LIMIT} questions left today"
+            plan_note = f"Questions left today: {left} of {FREE_LIMIT}"
             usage_bar = f'<div class="usage-bar"><div class="usage-fill" style="width:{percent}%"></div></div>'
         st.markdown(
             '<div class="account-card">'
