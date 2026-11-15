@@ -2,10 +2,12 @@ import csv
 import datetime
 import hashlib
 import hmac
+import html
 import os
 import re
 import secrets as pysecrets
 import time
+import urllib.parse
 
 import requests
 import streamlit as st
@@ -533,6 +535,88 @@ st.markdown(
         color: #183246 !important;
     }
 
+    /* Chat box: one clean white rounded field (no dark frame). */
+    [data-testid="stChatInput"],
+    [data-testid="stChatInput"] > div,
+    [data-testid="stChatInput"] div[data-baseweb],
+    [data-testid="stChatInput"] [data-baseweb="textarea"],
+    [data-testid="stChatInput"] [data-baseweb="base-input"] {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+        border-color: #C9D6DF !important;
+        border-radius: 14px !important;
+    }
+    [data-testid="stChatInput"] textarea {
+        border-radius: 14px !important;
+    }
+
+    /* Text boxes: white with a soft border, and light helper buttons (eye / + / -). */
+    [data-baseweb="input"],
+    [data-baseweb="base-input"],
+    [data-baseweb="textarea"] {
+        background: #FFFFFF !important;
+        background-color: #FFFFFF !important;
+        border-color: #C9D6DF !important;
+        border-radius: 11px !important;
+    }
+    [data-testid="stTextInput"] button,
+    [data-testid="stNumberInput"] button {
+        background: #EEF3F7 !important;
+        border: 0 !important;
+        color: #526273 !important;
+    }
+    [data-testid="stTextInput"] button *,
+    [data-testid="stNumberInput"] button * {
+        color: #526273 !important;
+        fill: #526273 !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stCaptionContainer"] a {
+        text-decoration: none !important;
+    }
+
+    /* Admin dashboard tables and badges. */
+    .admin-table-wrap {
+        overflow-x: auto;
+        background: #FFFFFF;
+        border: 1px solid #D8E1E8;
+        border-radius: 14px;
+        box-shadow: 0 4px 14px rgba(16,36,58,.045);
+        margin-bottom: 8px;
+    }
+    .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+    .admin-table th {
+        text-align: left;
+        padding: 11px 14px;
+        background: #F0F5F9;
+        color: #10243A !important;
+        font-weight: 700;
+        font-size: 12px;
+        letter-spacing: .03em;
+        border-bottom: 1px solid #D8E1E8;
+        white-space: nowrap;
+    }
+    .admin-table td {
+        padding: 10px 14px;
+        color: #263442 !important;
+        border-bottom: 1px solid #EDF1F5;
+        white-space: nowrap;
+    }
+    .admin-table tr:last-child td { border-bottom: 0; }
+    .badge {
+        display: inline-block;
+        padding: 2px 11px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+    .badge-admin { background: #E3EEFA; color: #0B4F8A !important; }
+    .badge-paid { background: #DDF5EE; color: #0B6B4F !important; }
+    .badge-free { background: #EEF1F4; color: #526273 !important; }
+
     /* Primary buttons (including form submit buttons) in any Streamlit version. */
     button[kind^="primary"],
     [data-testid="stBaseButton-primary"],
@@ -834,8 +918,8 @@ def render_feedback(index):
 # Accounts are stored in a free Supabase table. Sign-up/sign-in is switched on
 # only when SUPABASE_URL and SUPABASE_SERVICE_KEY exist in Streamlit Secrets.
 # Without them the app stays open for everyone, exactly as before.
-SUPABASE_URL = get_secret("SUPABASE_URL")
-SUPABASE_KEY = get_secret("SUPABASE_SERVICE_KEY")
+SUPABASE_URL = str(get_secret("SUPABASE_URL") or "").strip().strip("\"'").strip()
+SUPABASE_KEY = str(get_secret("SUPABASE_SERVICE_KEY") or "").strip().strip("\"'").strip()
 AUTH_ENABLED = bool(SUPABASE_URL and SUPABASE_KEY)
 LIMITS_ACTIVE = AUTH_ENABLED
 
@@ -863,8 +947,22 @@ def _today():
 
 
 # ---------- database (Supabase REST) ----------
+def supabase_base_url():
+    """Clean the project URL so extra paths (like /rest/v1) or a dashboard link still work."""
+    raw = SUPABASE_URL
+    if "://" not in raw:
+        raw = "https://" + raw
+    parts = urllib.parse.urlsplit(raw)
+    host = parts.netloc
+    if host in ("supabase.com", "www.supabase.com", "app.supabase.com"):
+        match = re.search(r"/project/([a-z0-9]+)", parts.path)
+        if match:
+            return f"https://{match.group(1)}.supabase.co"
+    return f"{parts.scheme}://{host}"
+
+
 def db_request(method, params=None, payload=None):
-    url = f"{SUPABASE_URL.rstrip('/')}/rest/v1/users"
+    url = f"{supabase_base_url()}/rest/v1/users"
     headers = {
         "apikey": SUPABASE_KEY,
         "Content-Type": "application/json",
@@ -919,6 +1017,21 @@ def db_update_user(email, changes):
         raise _db_error(response, "Could not save the change. Please try again.")
     rows = response.json() if response.content else []
     return rows[0] if rows else None
+
+
+def db_list_users():
+    """All members (no password data), newest first."""
+    response = db_request(
+        "GET",
+        params={
+            "select": "email,name,paid_until,used_date,used_count,created_at",
+            "order": "created_at.desc",
+            "limit": "1000",
+        },
+    )
+    if response.status_code != 200:
+        raise _db_error(response, "Could not load the member list.")
+    return response.json()
 
 
 # ---------- passwords ----------
@@ -1089,6 +1202,179 @@ def admin_reset_password(email, new_password):
     return True, f"Password for {email} was reset."
 
 
+def admin_revoke(email):
+    email = email.strip().lower()
+    try:
+        if not db_get_user(email):
+            return False, "No account found with that email."
+        db_update_user(email, {"paid_until": None})
+    except RuntimeError as error:
+        return False, str(error)
+    return True, f"Paid access removed for {email}."
+
+
+def _html_table(headers, rows):
+    head = "".join(f"<th>{html.escape(h)}</th>" for h in headers)
+    body = "".join("<tr>" + "".join(f"<td>{cell}</td>" for cell in row) + "</tr>" for row in rows)
+    return (
+        '<div class="admin-table-wrap"><table class="admin-table">'
+        f"<thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>"
+    )
+
+
+def _stat_card(label, value, note):
+    return (
+        f'<div class="info-card"><div class="card-label">{html.escape(label)}</div>'
+        f'<div class="card-value">{html.escape(value)}</div>'
+        f'<div class="card-note">{html.escape(note)}</div></div>'
+    )
+
+
+def render_admin_dashboard():
+    """Members, paid access and feedback for the site owner."""
+    st.markdown('<div class="section-heading">Admin dashboard</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-subtitle">Members, paid access and feedback in one place.</div>',
+        unsafe_allow_html=True,
+    )
+    notice = st.session_state.pop("admin_notice", None)
+    if notice:
+        (st.success if notice[0] else st.error)(notice[1])
+
+    try:
+        members = db_list_users()
+    except RuntimeError as error:
+        st.error(str(error))
+        return
+
+    today = _today()
+    admin_set = email_list("ADMIN_EMAILS")
+    paid_set = email_list("PAID_EMAILS")
+
+    def plan_of(row):
+        email = str(row.get("email", "")).lower()
+        if email in admin_set:
+            return "Admin"
+        if email in paid_set or (row.get("paid_until") and str(row["paid_until"]) >= today):
+            return "Paid"
+        return "Free"
+
+    plans = [plan_of(m) for m in members]
+    asked_today = sum(int(m.get("used_count") or 0) for m in members if m.get("used_date") == today)
+    stats = [
+        ("MEMBERS", str(len(members)), "Registered accounts"),
+        ("PAID", str(plans.count("Paid")), "Active paid members"),
+        ("FREE", str(plans.count("Free")), "On the free plan"),
+        ("QUESTIONS TODAY", str(asked_today), "Asked by free members"),
+    ]
+    for col, (label, value, note) in zip(st.columns(4), stats):
+        with col:
+            st.markdown(_stat_card(label, value, note), unsafe_allow_html=True)
+
+    st.markdown("#### Members")
+    query = st.text_input(
+        "Search members",
+        placeholder="Search by name or email",
+        key="admin_search",
+        label_visibility="collapsed",
+    ).strip().lower()
+    rows = []
+    for member, plan in zip(members, plans):
+        haystack = f"{member.get('email', '')} {member.get('name') or ''}".lower()
+        if query and query not in haystack:
+            continue
+        paid_until = str(member.get("paid_until") or "") if plan == "Paid" else ""
+        used = int(member.get("used_count") or 0) if member.get("used_date") == today else 0
+        rows.append(
+            [
+                html.escape(member.get("name") or "—"),
+                html.escape(member.get("email", "")),
+                f'<span class="badge badge-{plan.lower()}">{plan}</span>',
+                html.escape(paid_until or "—"),
+                str(used),
+                html.escape(str(member.get("created_at") or "")[:10] or "—"),
+            ]
+        )
+    if rows:
+        st.markdown(
+            _html_table(["Name", "Email", "Plan", "Paid until", "Questions today", "Joined"], rows[:200]),
+            unsafe_allow_html=True,
+        )
+        if len(rows) > 200:
+            st.caption(f"Showing the first 200 of {len(rows)} matches. Use the search box to narrow down.")
+    else:
+        st.info("No members found." if members else "No members yet. Accounts will appear here as people sign up.")
+
+    if members:
+        st.markdown("#### Manage a member")
+        emails = [m["email"] for m in members]
+        left, right = st.columns(2)
+        with left:
+            st.markdown("**Paid access**")
+            chosen = st.selectbox("Member", emails, key="admin_member")
+            days = st.number_input("Paid days", min_value=1, max_value=365, value=30, step=1, key="admin_days")
+            b1, b2 = st.columns(2)
+            if b1.button("Activate / extend", key="admin_activate_btn", use_container_width=True):
+                st.session_state.admin_notice = admin_activate(chosen, days)
+                st.rerun()
+            if b2.button("Remove paid access", key="admin_revoke_btn", use_container_width=True):
+                st.session_state.admin_notice = admin_revoke(chosen)
+                st.rerun()
+        with right:
+            st.markdown("**Reset password**")
+            chosen_reset = st.selectbox("Member for password reset", emails, key="admin_member_reset")
+            new_password = st.text_input("New password (at least 8 characters)", type="password", key="admin_new_password")
+            if st.button("Reset password", key="admin_reset_btn", use_container_width=True):
+                st.session_state.admin_notice = admin_reset_password(chosen_reset, new_password)
+                st.rerun()
+
+    st.markdown("#### Feedback")
+    feedback_rows = []
+    if os.path.exists(FEEDBACK_FILE):
+        try:
+            with open(FEEDBACK_FILE, newline="", encoding="utf-8") as handle:
+                feedback_rows = list(csv.DictReader(handle))
+        except OSError:
+            feedback_rows = []
+    ups = sum(1 for r in feedback_rows if r.get("rating") == "up")
+    downs = sum(1 for r in feedback_rows if r.get("rating") == "down")
+    fb1, fb2, fb3 = st.columns(3)
+    with fb1:
+        st.markdown(_stat_card("HELPFUL", str(ups), "Thumbs up"), unsafe_allow_html=True)
+    with fb2:
+        st.markdown(_stat_card("NOT HELPFUL", str(downs), "Thumbs down"), unsafe_allow_html=True)
+    with fb3:
+        if feedback_rows:
+            with open(FEEDBACK_FILE, "rb") as handle:
+                st.download_button(
+                    "⬇️ Download feedback (CSV)",
+                    data=handle.read(),
+                    file_name="feedback_log.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                )
+        else:
+            st.caption("No feedback yet.")
+    comments = [r for r in feedback_rows if r.get("rating") == "down" and (r.get("comment") or "").strip()]
+    if comments:
+        st.markdown("**Latest comments on thumbs-down answers**")
+        recent = comments[-5:][::-1]
+        st.markdown(
+            _html_table(
+                ["Time (UTC)", "Comment", "Question"],
+                [
+                    [
+                        html.escape(str(r.get("time_utc", ""))[:16].replace("T", " ")),
+                        html.escape(r.get("comment", "")[:200]),
+                        html.escape(r.get("question", "")[:90]),
+                    ]
+                    for r in recent
+                ],
+            ),
+            unsafe_allow_html=True,
+        )
+
+
 USER = current_user()
 IS_ADMIN = bool(USER and USER["email"] in email_list("ADMIN_EMAILS"))
 IS_PAID = (not LIMITS_ACTIVE) or IS_ADMIN or bool(
@@ -1195,7 +1481,7 @@ with st.sidebar:
     st.markdown("### Navigation")
     page = st.radio(
         "Choose a workspace",
-        ["AI Assistant", "Lab Result Explainer", "About the Project"],
+        ["AI Assistant", "Lab Result Explainer", "About the Project"] + (["Admin Dashboard"] if IS_ADMIN else []),
         label_visibility="collapsed",
     )
     st.markdown("---")
@@ -1216,40 +1502,11 @@ with st.sidebar:
             st.caption(f"Free plan · {left} of {FREE_LIMIT} questions left today")
         st.button("Log out", on_click=logout_user, use_container_width=True)
         st.markdown("---")
-    if USER and IS_ADMIN:
-        st.markdown("### Admin")
-        admin_email = st.text_input("Member email", key="admin_email")
-        admin_days = st.number_input("Paid days", min_value=1, max_value=365, value=30, step=1, key="admin_days")
-        if st.button("Activate paid access", use_container_width=True, key="admin_activate_btn"):
-            ok, message = admin_activate(admin_email, admin_days)
-            (st.success if ok else st.error)(message)
-        admin_new_password = st.text_input("New password for this member", type="password", key="admin_new_password")
-        if st.button("Reset password", use_container_width=True, key="admin_reset_btn"):
-            ok, message = admin_reset_password(admin_email, admin_new_password)
-            (st.success if ok else st.error)(message)
-        st.markdown("---")
     if st.button("🗑️ Clear conversation", use_container_width=True):
         st.session_state.messages = []
         st.session_state.pending_prompt = None
         st.rerun()
     st.link_button("✉️ Share feedback", FEEDBACK_URL, use_container_width=True)
-    admin_unlocked = IS_ADMIN
-    if not admin_unlocked and st.query_params.get("admin") == "1" and get_secret("ADMIN_PASSWORD"):
-        st.markdown("---")
-        admin_entered = st.text_input("Admin password", type="password", key="admin_pw")
-        admin_unlocked = bool(admin_entered) and admin_entered == get_secret("ADMIN_PASSWORD")
-    if admin_unlocked:
-        if os.path.exists(FEEDBACK_FILE):
-            with open(FEEDBACK_FILE, "rb") as feedback_handle:
-                st.download_button(
-                    "⬇️ Download feedback (CSV)",
-                    data=feedback_handle.read(),
-                    file_name="feedback_log.csv",
-                    mime="text/csv",
-                    use_container_width=True,
-                )
-        else:
-            st.caption("No feedback yet.")
     st.caption("Educational support only • Not a diagnostic service")
 
 # =========================================================
@@ -1418,6 +1675,12 @@ why interpretation is limited.
         """,
         unsafe_allow_html=True,
     )
+
+# =========================================================
+# PAGE: ADMIN DASHBOARD
+# =========================================================
+elif page == "Admin Dashboard" and IS_ADMIN:
+    render_admin_dashboard()
 
 # =========================================================
 # PAGE: ABOUT
