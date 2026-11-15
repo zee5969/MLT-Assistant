@@ -877,6 +877,49 @@ st.markdown(
     }
     .upgrade-modal .um-foot strong { color: #D0D0D0 !important; }
 
+    /* Popup window (opens in front of the page, like ChatGPT / Claude). */
+    div[role="dialog"] {
+        background: #262626 !important;
+        border: 1px solid #3A3A3A !important;
+        border-radius: 22px !important;
+        box-shadow: 0 30px 80px rgba(0,0,0,.55) !important;
+    }
+    div[role="dialog"] h1, div[role="dialog"] h2, div[role="dialog"] h3,
+    div[role="dialog"] [data-testid="stHeading"] * {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+        font-family: Georgia, 'Times New Roman', serif !important;
+        font-size: 28px !important;
+        font-weight: 700 !important;
+    }
+    div[role="dialog"] button[aria-label="Close"],
+    div[role="dialog"] button[aria-label="Close"] * {
+        color: #D0D0D0 !important;
+        fill: #D0D0D0 !important;
+        background: transparent !important;
+    }
+    div[data-testid="stModal"], div[data-baseweb="modal"] {
+        background: rgba(0,0,0,.62) !important;
+    }
+    .upgrade-modal.in-dialog {
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+    }
+    .limit-bar {
+        background: #262626;
+        border: 1px solid #3A3A3A;
+        border-radius: 14px;
+        padding: 14px 18px;
+        margin: 0 0 12px 0;
+        color: #F1F1F1 !important;
+        font-size: 14px;
+    }
+    .limit-bar strong { color: #FFFFFF !important; }
+
     /* Hide the invisible script frames so they take no space. */
     iframe[height="0"] {
         display: none !important;
@@ -1809,8 +1852,8 @@ def render_hero():
     )
 
 
-def show_paywall():
-    """Dark 'keep chatting' upgrade card shown when the free daily limit is used up."""
+def _paywall_card_html():
+    """Body of the upgrade popup: features, plans and payment details."""
     details = html.escape(str(PAYMENT_DETAILS)).replace("\n", "<br>")
     features = [
         ("♾️", "Unlimited questions every day"),
@@ -1823,7 +1866,6 @@ def show_paywall():
         f'<span class="um-text">{html.escape(text)}</span></div>'
         for icon, text in features
     )
-
     monthly_price = html.escape(PRICE_MONTHLY or "Contact developer")
     plans_html = (
         '<div class="um-plan selected"><div class="um-plan-left"><div class="um-radio"></div>'
@@ -1838,24 +1880,46 @@ def show_paywall():
             '<div class="um-plan-note">Billed annually</div></div></div>'
             f'<div class="um-plan-price">{html.escape(PRICE_YEARLY)}</div></div>'
         )
-
-    st.markdown(
-        '<div class="upgrade-modal">'
-        '<div class="um-title">Keep chatting with MLT Assistant</div>'
+    return (
+        '<div class="upgrade-modal in-dialog">'
         f'<div class="um-sub">Your free questions ({FREE_LIMIT} per day) are finished. '
         "They return at 5:00 AM Pakistan time, or keep going now with unlimited access.</div>"
         f"{feature_html}"
         f'<div class="um-plans">{plans_html}</div>'
         f'<div class="um-box"><strong>How to get unlimited access</strong><br>{details}</div>'
         f'<div class="um-foot">Your account email: <strong>{html.escape(USER["email"])}</strong></div>'
-        "</div>",
+        "</div>"
+    )
+
+
+def _paywall_dialog_body():
+    st.markdown(_paywall_card_html(), unsafe_allow_html=True)
+    if PAYMENT_URL:
+        st.link_button("Upgrade for unlimited access", PAYMENT_URL, use_container_width=True, type="primary")
+    st.button("🔄 I have paid — refresh my access", key="refresh_access", use_container_width=True)
+
+
+def show_paywall():
+    """When the free limit is used up, open an upgrade popup in front of the page."""
+    st.markdown(
+        '<div class="limit-bar"><strong>Daily free limit reached.</strong> '
+        "Your questions return at 5:00 AM Pakistan time, or upgrade for unlimited access.</div>",
         unsafe_allow_html=True,
     )
-    _, mid, _ = st.columns([1, 2.2, 1])
-    with mid:
-        if PAYMENT_URL:
-            st.link_button("Upgrade for unlimited access", PAYMENT_URL, use_container_width=True, type="primary")
-        st.button("🔄 I have paid — refresh my access", key="refresh_access", use_container_width=True)
+    st.button("View plans", key="view_plans")
+    title = "Keep chatting with MLT Assistant"
+    dialog_decorator = getattr(st, "dialog", None) or getattr(st, "experimental_dialog", None)
+    if dialog_decorator is not None:
+        try:
+            dialog_decorator(title, width="large")(_paywall_dialog_body)()
+            return
+        except Exception:
+            pass
+    # Very old Streamlit without popups: show the card on the page instead.
+    st.markdown(_paywall_card_html().replace(" in-dialog", ""), unsafe_allow_html=True)
+    if PAYMENT_URL:
+        st.link_button("Upgrade for unlimited access", PAYMENT_URL, type="primary")
+    st.button("🔄 I have paid — refresh my access", key="refresh_access")
 
 
 # Sign-in / sign-up screen: nothing else is shown until the visitor is signed in.
