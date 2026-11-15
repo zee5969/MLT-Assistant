@@ -54,6 +54,63 @@ st.markdown(
         color: var(--ink) !important;
     }
 
+    /* =====================================================
+       LOGIN & CREATE ACCOUNT BACKGROUND VIDEO OVERLAY
+       ===================================================== */
+    .stApp:has(.login-video-bg),
+    .stApp:has(.login-video-bg) [data-testid="stAppViewContainer"] {
+        background: transparent !important;
+    }
+
+    .login-video-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        object-fit: cover;
+        z-index: 0;
+        pointer-events: none;
+    }
+
+    .login-video-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(16, 36, 58, 0.55); /* Dark clinical tint for crisp contrast */
+        z-index: 0;
+        pointer-events: none;
+    }
+
+    /* Keep login header text readable over the video background */
+    .stApp:has(.login-video-bg) [data-testid="stHeader"] {
+        background: transparent !important;
+    }
+    .stApp:has(.login-video-bg) .section-heading {
+        color: #FFFFFF !important;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+    }
+    .stApp:has(.login-video-bg) .section-subtitle {
+        color: #E2EEF5 !important;
+        text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+    }
+    .stApp:has(.login-video-bg) [data-baseweb="tab-list"] {
+        background: rgba(255, 255, 255, 0.94);
+        border-radius: 12px 12px 0 0;
+        padding: 4px 8px 0 8px;
+    }
+
+    /* Ensure forms and hero sit cleanly above the video */
+    .stApp:has(.login-video-bg) .hero,
+    .stApp:has(.login-video-bg) [data-testid="stForm"],
+    .stApp:has(.login-video-bg) [data-testid="stTabs"],
+    .stApp:has(.login-video-bg) .disclaimer {
+        position: relative;
+        z-index: 1;
+    }
+
     /* Make default Streamlit text readable on the light canvas. */
     .stApp p, .stApp li, .stApp label, .stApp span,
     .stApp [data-testid="stMarkdownContainer"] {
@@ -1062,8 +1119,6 @@ FEEDBACK_URL = (
     "1FAIpQLSdFPi-G7vvQmojacHAh1GXs1kjWcAtgp3M1x-XGHuYW_DEkQA/viewform?usp=header"
 )
 
-# AI providers the visitor can choose from. Models can be changed with the
-# GROQ_MODEL / OPENAI_MODEL environment variables or Streamlit secrets.
 def get_secret(name):
     """Read a value from Streamlit Secrets, then from environment variables."""
     value = None
@@ -1185,7 +1240,7 @@ def _call_openai(model, messages):
     api_key = get_secret("OPENAI_API_KEY")
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY is not configured.")
-    from openai import OpenAI  # imported here so Groq still works without it
+    from openai import OpenAI
 
     client = OpenAI(api_key=api_key)
     response = client.chat.completions.create(
@@ -1212,7 +1267,7 @@ def _call_groq(model, messages):
             )
             return response.choices[0].message.content
         except Exception:
-            pass  # try once more without the extra option
+            pass
     response = client.chat.completions.create(
         model=model,
         messages=messages,
@@ -1223,21 +1278,20 @@ def _call_groq(model, messages):
 
 
 def get_ai_response(conversation):
-    """Get a reply. Paid members use OpenAI when a key exists; otherwise Groq.
-    If a service or model fails, the next one is tried automatically."""
+    """Get a reply. Paid members use OpenAI when a key exists; otherwise Groq."""
     messages = [{"role": "system", "content": SYSTEM_PROMPT}, *conversation]
     attempts = []
     if IS_PAID and get_secret("OPENAI_API_KEY"):
         attempts.append(("OpenAI", PROVIDERS["OpenAI"]["model"]))
     groq_models = [
-        st.session_state.get("good_groq_model"),  # the one that worked last time
+        st.session_state.get("good_groq_model"),
         PROVIDERS["Groq"]["model"],
         "openai/gpt-oss-20b",
         "openai/gpt-oss-120b",
         "llama-3.3-70b-versatile",
         "llama-3.1-8b-instant",
     ]
-    for model in dict.fromkeys(m for m in groq_models if m):  # unique, keeps order
+    for model in dict.fromkeys(m for m in groq_models if m):
         attempts.append(("Groq", model))
 
     errors = []
@@ -1273,8 +1327,6 @@ def submit_user_message(message):
         if USER:
             save_current_chat(USER)
     except Exception as error:
-        # Avoid showing tracebacks or API credentials in the public interface.
-        # Saved (not shown here) because the page reruns right after this and would hide it.
         st.session_state.last_error = str(error)
 
 
@@ -1352,9 +1404,6 @@ def render_feedback(index):
 # =========================================================
 # ACCOUNTS, MEMBERSHIP AND DAILY LIMIT
 # =========================================================
-# Accounts are stored in a free Supabase table. Sign-up/sign-in is switched on
-# only when SUPABASE_URL and SUPABASE_SERVICE_KEY exist in Streamlit Secrets.
-# Without them the app stays open for everyone, exactly as before.
 SUPABASE_URL = str(get_secret("SUPABASE_URL") or "").strip().strip("\"'").strip()
 SUPABASE_KEY = str(get_secret("SUPABASE_SERVICE_KEY") or "").strip().strip("\"'").strip()
 AUTH_ENABLED = bool(SUPABASE_URL and SUPABASE_KEY)
@@ -1416,8 +1465,6 @@ def db_request(method, params=None, payload=None, table="users"):
         "Content-Type": "application/json",
         "Prefer": "return=representation",
     }
-    # New-style keys (sb_secret_...) go ONLY in the apikey header. Old-style
-    # JWT keys (service_role, start with "eyJ") are also sent as a Bearer token.
     if str(SUPABASE_KEY).startswith("eyJ"):
         headers["Authorization"] = f"Bearer {SUPABASE_KEY}"
     try:
@@ -1633,11 +1680,6 @@ def _parse_time(value):
 
 
 # ---------- "stay signed in" after a page refresh ----------
-# The sign-in token is kept in three places so a refresh never logs you out:
-#   1. a browser cookie,
-#   2. the browser's localStorage (most reliable),
-#   3. a one-time ?mlt_t=... link used to hand the token from localStorage
-#      to the server after a refresh (it is removed from the address at once).
 SESSION_COOKIE = "mlt_session"
 STORAGE_KEY = "mlt_session"
 URL_PARAM = "mlt_t"
@@ -1645,7 +1687,6 @@ SESSION_DAYS = 30
 
 
 def _session_key():
-    # Derived from the server-side database key, so no extra secret is needed.
     return hashlib.sha256(("mlt-session|" + SUPABASE_KEY).encode("utf-8")).digest()
 
 
@@ -1679,8 +1720,7 @@ def read_session_token(token):
 
 
 def run_js(js):
-    """Run a small script in the browser. Newest Streamlit: st.html (runs in the page itself);
-    otherwise a hidden frame where window.parent is the page. Never stops the app on failure."""
+    """Run a small script in the browser."""
     try:
         st.html(f"<script>{js.replace('window.parent', 'window')}</script>", unsafe_allow_javascript=True)
         return
@@ -1761,7 +1801,7 @@ def restore_login():
         if not token:
             token = url_token
         try:
-            del st.query_params[URL_PARAM]  # never leave the token in the address bar
+            del st.query_params[URL_PARAM]
         except Exception:
             pass
 
@@ -1773,7 +1813,6 @@ def restore_login():
     if row:
         _start_session(row)
     else:
-        # Old / invalid token: remove it from the browser and do not retry.
         st.session_state.clear_cookie = True
         st.session_state.no_bridge = True
 
@@ -1847,7 +1886,7 @@ def logout_user():
         st.session_state.pop(key, None)
     st.session_state.clear_cookie = True
     st.session_state.cookie_checked = True
-    st.session_state.no_bridge = True  # do not sign straight back in
+    st.session_state.no_bridge = True
     st.session_state.messages = []
     st.session_state.pending_prompt = None
     for key in ("chats_loaded", "chat_list", "chat_store", "current_chat", "chat_db_ok"):
@@ -1883,11 +1922,11 @@ def init_chats(user):
     try:
         st.session_state.chat_list = db_list_chats(user["email"])
     except RuntimeError:
-        st.session_state.chat_db_ok = False  # chats table missing: keep chats for this visit only
+        st.session_state.chat_db_ok = False
 
 
 def save_current_chat(user):
-    """Save the open conversation to the member's chat list (and the database when available)."""
+    """Save the open conversation to the member's chat list."""
     messages = st.session_state.get("messages") or []
     if not messages or not user:
         return
@@ -1971,14 +2010,13 @@ def current_user():
         return None
     row = st.session_state.get("user_row")
     stale = time.time() - st.session_state.get("user_checked", 0) > 60
-    # A locked member is re-checked on every click, so paid access starts immediately.
     if row is None or stale or _row_is_blocked(row):
         try:
             fresh = db_get_user(email)
         except RuntimeError:
-            fresh = row  # database hiccup: keep the last known data
+            fresh = row
         if fresh is None:
-            logout_user()  # account was deleted
+            logout_user()
             return None
         row = fresh
         st.session_state.user_row = row
@@ -2010,7 +2048,7 @@ def add_usage(user):
 
 
 def admin_activate(email, days):
-    """Give a member paid access for a number of days (adds to any remaining time)."""
+    """Give a member paid access for a number of days."""
     email = email.strip().lower()
     try:
         row = db_get_user(email)
@@ -2172,7 +2210,7 @@ def render_admin_dashboard():
     st.markdown("#### Payments")
     try:
         payments = db_list_payments(limit=100)
-    except RuntimeError as error:
+    except RuntimeError:
         payments = None
         st.caption(
             "Online payment requests are switched off (the payments table is not created). "
@@ -2367,7 +2405,7 @@ def _payment_form(prefix):
     try:
         pending = db_list_payments(email=USER["email"], status="pending")
     except RuntimeError:
-        table_ok = False  # payments table not created: use the simple WhatsApp / manual way
+        table_ok = False
     if not table_ok:
         st.caption(
             "After you pay, send your payment screenshot and your account email to the "
@@ -2414,15 +2452,25 @@ def show_paywall():
             return
         except Exception:
             pass
-    # Very old Streamlit without popups: show the card on the page instead.
     st.markdown(_paywall_card_html().replace(" in-dialog", ""), unsafe_allow_html=True)
     if PAYMENT_URL:
         st.link_button("Pay now", PAYMENT_URL, type="primary")
     _payment_form("page")
 
 
-# Sign-in / sign-up screen: nothing else is shown until the visitor is signed in.
+# =========================================================
+# SIGN-IN / CREATE ACCOUNT SCREEN (WITH MLT VIDEO BACKGROUND)
+# =========================================================
 if AUTH_ENABLED and USER is None:
+    st.markdown(
+        """
+        <video autoplay muted loop playsinline class="login-video-bg">
+            <source src="https://assets.mixkit.co/videos/preview/mixkit-scientist-working-with-a-microscope-in-a-laboratory-43105-large.mp4" type="video/mp4">
+        </video>
+        <div class="login-video-overlay"></div>
+        """,
+        unsafe_allow_html=True,
+    )
     restore_bridge()
     render_hero()
     _, center, _ = st.columns([1, 1.7, 1])
