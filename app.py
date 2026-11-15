@@ -2096,7 +2096,6 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### Developer")
     st.markdown("**Zeeshan Ali**")
-    st.caption("Medical Laboratory Technology Student")
     st.caption("AI & Healthcare Technology Enthusiast")
     st.markdown("---")
     if USER:
