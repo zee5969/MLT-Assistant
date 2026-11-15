@@ -2464,8 +2464,35 @@ def show_paywall():
 if AUTH_ENABLED and USER is None:
     st.markdown(
         """
+        <style>
+        .login-video-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .login-video-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, rgba(16, 36, 58, 0.82), rgba(13, 148, 136, 0.70));
+            z-index: 0;
+            pointer-events: none;
+        }
+        /* Make form elements sit above the video */
+        [data-testid="stForm"], [data-testid="stTabs"], .hero, .disclaimer {
+            position: relative;
+            z-index: 1;
+        }
+        </style>
         <video autoplay muted loop playsinline class="login-video-bg">
-            <source src="https://assets.mixkit.co/videos/preview/mixkit-scientist-working-with-a-microscope-in-a-laboratory-43105-large.mp4" type="video/mp4">
+            <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" type="video/mp4">
         </video>
         <div class="login-video-overlay"></div>
         """,
@@ -2475,9 +2502,9 @@ if AUTH_ENABLED and USER is None:
     render_hero()
     _, center, _ = st.columns([1, 1.7, 1])
     with center:
-        st.markdown('<div class="section-heading">Welcome</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-heading" style="color: #FFFFFF !important;">Welcome</div>', unsafe_allow_html=True)
         st.markdown(
-            f'<div class="section-subtitle">Sign in to your account, or create a free one in seconds. '
+            f'<div class="section-subtitle" style="color: #E2EEF5 !important;">Sign in to your account, or create a free one in seconds. '
             f'Free plan: {_questions(FREE_LIMIT)} per day.</div>',
             unsafe_allow_html=True,
         )
