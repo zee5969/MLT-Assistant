@@ -1025,7 +1025,7 @@ def get_secret(name):
 
 
 PROVIDERS = {
-    "Groq": {"model": get_secret("GROQ_MODEL") or "llama-3.3-70b-versatile"},
+    "Groq": {"model": get_secret("GROQ_MODEL") or "openai/gpt-oss-20b"},
     "OpenAI": {"model": get_secret("OPENAI_MODEL") or "gpt-5-mini"},
 }
 
@@ -1151,11 +1151,23 @@ def _call_groq(model, messages):
     if not api_key:
         raise RuntimeError("GROQ_API_KEY is not configured. Add it to Streamlit Secrets.")
     client = Groq(api_key=api_key)
+    if "gpt-oss" in model:
+        try:
+            response = client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=0.4,
+                max_tokens=3000,
+                extra_body={"reasoning_effort": "low"},
+            )
+            return response.choices[0].message.content
+        except Exception:
+            pass  # try once more without the extra option
     response = client.chat.completions.create(
         model=model,
         messages=messages,
         temperature=0.4,
-        max_tokens=1800,
+        max_tokens=3000 if "gpt-oss" in model else 1800,
     )
     return response.choices[0].message.content
 
@@ -1167,21 +1179,30 @@ def get_ai_response(conversation):
     attempts = []
     if IS_PAID and get_secret("OPENAI_API_KEY"):
         attempts.append(("OpenAI", PROVIDERS["OpenAI"]["model"]))
-    groq_models = [PROVIDERS["Groq"]["model"], "llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
-    for model in dict.fromkeys(groq_models):  # unique, keeps order
+    groq_models = [
+        st.session_state.get("good_groq_model"),  # the one that worked last time
+        PROVIDERS["Groq"]["model"],
+        "openai/gpt-oss-20b",
+        "openai/gpt-oss-120b",
+        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instant",
+    ]
+    for model in dict.fromkeys(m for m in groq_models if m):  # unique, keeps order
         attempts.append(("Groq", model))
 
-    last_error = None
+    errors = []
     for provider, model in attempts:
         try:
             text = _call_openai(model, messages) if provider == "OpenAI" else _call_groq(model, messages)
             if text and text.strip():
                 st.session_state.provider = provider
+                if provider == "Groq":
+                    st.session_state.good_groq_model = model
                 return text
-            last_error = RuntimeError(f"{provider} ({model}) returned an empty answer.")
+            errors.append(f"{provider} {model}: empty answer")
         except Exception as error:
-            last_error = RuntimeError(f"{provider} ({model}): {error}")
-    raise last_error or RuntimeError("No AI service is available.")
+            errors.append(f"{provider} {model}: {str(error)[:160]}")
+    raise RuntimeError(" | ".join(errors) or "No AI service is available.")
 
 
 def submit_user_message(message):
