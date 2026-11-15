@@ -910,6 +910,40 @@ st.markdown(
         min-height: 46px;
     }
     div[role="dialog"] .stButton > button p { color: #10243A !important; }
+    /* Compact popup: narrow, short, navy. */
+    [data-testid="stDialog"] div[role="dialog"],
+    [data-testid="stDialog"] div[role="dialog"] > div,
+    div[data-baseweb="modal"] div[role="dialog"],
+    div[data-baseweb="modal"] div[role="dialog"] > div {
+        background: #10243A !important;
+        background-color: #10243A !important;
+    }
+    [data-testid="stDialog"] div[role="dialog"],
+    div[data-baseweb="modal"] div[role="dialog"] {
+        max-width: 480px !important;
+        width: 92vw !important;
+        padding: 6px 8px 10px 8px !important;
+    }
+    div[role="dialog"] h1, div[role="dialog"] h2, div[role="dialog"] h3,
+    div[role="dialog"] [data-testid="stHeading"] * {
+        font-size: 21px !important;
+        line-height: 1.25 !important;
+        padding: 14px 0 4px 0 !important;
+        margin: 0 !important;
+    }
+    div[role="dialog"] .um-sub { font-size: 13px !important; margin-bottom: 10px !important; line-height: 1.45 !important; }
+    div[role="dialog"] .um-feature { padding: 3px 0 !important; font-size: 13.5px !important; gap: 10px !important; }
+    div[role="dialog"] .um-feature .um-icon { font-size: 15px !important; width: 20px !important; }
+    div[role="dialog"] .um-plans { margin-top: 10px !important; }
+    div[role="dialog"] .um-plan { padding: 10px 14px !important; margin-top: 8px !important; border-radius: 12px !important; }
+    div[role="dialog"] .um-plan-name, div[role="dialog"] .um-plan-price { font-size: 15px !important; }
+    div[role="dialog"] .um-plan-note { font-size: 12px !important; }
+    div[role="dialog"] .um-radio { width: 20px !important; height: 20px !important; flex: 0 0 20px !important; }
+    div[role="dialog"] .um-plan.selected .um-radio { border-width: 6px !important; }
+    div[role="dialog"] .um-box { margin-top: 10px !important; padding: 9px 12px !important; font-size: 12.5px !important; line-height: 1.5 !important; }
+    div[role="dialog"] .um-foot { margin-top: 8px !important; font-size: 11px !important; }
+    div[role="dialog"] .stButton > button, div[role="dialog"] .stLinkButton > a { min-height: 40px !important; }
+    div[role="dialog"] [data-testid="stVerticalBlock"] { gap: .5rem !important; }
     .upgrade-modal.in-dialog {
         background: transparent !important;
         border: 0 !important;
@@ -1920,7 +1954,7 @@ def show_paywall():
     dialog_decorator = getattr(st, "dialog", None) or getattr(st, "experimental_dialog", None)
     if dialog_decorator is not None:
         try:
-            dialog_decorator(title, width="medium")(_paywall_dialog_body)()
+            dialog_decorator(title, width="small")(_paywall_dialog_body)()
             return
         except Exception:
             pass
