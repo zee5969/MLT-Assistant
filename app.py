@@ -1131,45 +1131,57 @@ if "feedback_sent" not in st.session_state:
 # =========================================================
 # AI CLIENTS & RESPONSE
 # =========================================================
+def _call_openai(model, messages):
+    api_key = get_secret("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY is not configured.")
+    from openai import OpenAI  # imported here so Groq still works without it
+
+    client = OpenAI(api_key=api_key)
+    response = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        max_completion_tokens=4000,
+    )
+    return response.choices[0].message.content
+
+
+def _call_groq(model, messages):
+    api_key = get_secret("GROQ_API_KEY")
+    if not api_key:
+        raise RuntimeError("GROQ_API_KEY is not configured. Add it to Streamlit Secrets.")
+    client = Groq(api_key=api_key)
+    response = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        temperature=0.4,
+        max_tokens=1800,
+    )
+    return response.choices[0].message.content
+
+
 def get_ai_response(conversation):
-    """Send the conversation to the selected provider and return the reply."""
-    # Free members use Groq. Paid members and admins use OpenAI automatically
-    # once OPENAI_API_KEY exists; until then everyone uses Groq.
-    provider = "OpenAI" if (IS_PAID and get_secret("OPENAI_API_KEY")) else "Groq"
-    st.session_state.provider = provider
-    model = PROVIDERS[provider]["model"]
+    """Get a reply. Paid members use OpenAI when a key exists; otherwise Groq.
+    If a service or model fails, the next one is tried automatically."""
     messages = [{"role": "system", "content": SYSTEM_PROMPT}, *conversation]
+    attempts = []
+    if IS_PAID and get_secret("OPENAI_API_KEY"):
+        attempts.append(("OpenAI", PROVIDERS["OpenAI"]["model"]))
+    groq_models = [PROVIDERS["Groq"]["model"], "llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
+    for model in dict.fromkeys(groq_models):  # unique, keeps order
+        attempts.append(("Groq", model))
 
-    if provider == "OpenAI":
-        api_key = get_secret("OPENAI_API_KEY")
-        if not api_key:
-            raise RuntimeError(
-                "OPENAI_API_KEY is not configured. Add it to Streamlit Secrets "
-                "or your environment variables."
-            )
-        from openai import OpenAI  # imported here so Groq still works without it
-
-        client = OpenAI(api_key=api_key)
-        response = client.chat.completions.create(
-            model=model,
-            messages=messages,
-            max_completion_tokens=4000,
-        )
-    else:
-        api_key = get_secret("GROQ_API_KEY")
-        if not api_key:
-            raise RuntimeError(
-                "GROQ_API_KEY is not configured. Add it to Streamlit Secrets "
-                "or your environment variables."
-            )
-        client = Groq(api_key=api_key)
-        response = client.chat.completions.create(
-            model=model,
-            messages=messages,
-            temperature=0.4,
-            max_tokens=1800,
-        )
-    return response.choices[0].message.content or "I couldn't generate a response. Please try again."
+    last_error = None
+    for provider, model in attempts:
+        try:
+            text = _call_openai(model, messages) if provider == "OpenAI" else _call_groq(model, messages)
+            if text and text.strip():
+                st.session_state.provider = provider
+                return text
+            last_error = RuntimeError(f"{provider} ({model}) returned an empty answer.")
+        except Exception as error:
+            last_error = RuntimeError(f"{provider} ({model}): {error}")
+    raise last_error or RuntimeError("No AI service is available.")
 
 
 def submit_user_message(message):
@@ -1180,6 +1192,7 @@ def submit_user_message(message):
     if BLOCKED:
         return
     st.session_state.messages.append({"role": "user", "content": clean_message})
+    st.session_state.last_error = None
     try:
         with st.spinner("Preparing an MLT-focused response..."):
             answer = get_ai_response(st.session_state.messages)
@@ -1188,7 +1201,8 @@ def submit_user_message(message):
             add_usage(USER)
     except Exception as error:
         # Avoid showing tracebacks or API credentials in the public interface.
-        st.error(f"Unable to generate a response right now. Please try again in a moment. Details: {error}")
+        # Saved (not shown here) because the page reruns right after this and would hide it.
+        st.session_state.last_error = str(error)
 
 
 # =========================================================
@@ -2157,6 +2171,12 @@ if page == "AI Assistant":
             if message["role"] == "assistant":
                 render_feedback(index)
 
+    if st.session_state.get("last_error"):
+        st.error(
+            "Sorry, I could not get an answer just now. Please try again. "
+            f"Details: {st.session_state.last_error}"
+        )
+
     if st.session_state.pending_prompt:
         prompt_to_send = st.session_state.pending_prompt
         st.session_state.pending_prompt = None
@@ -2235,6 +2255,12 @@ why interpretation is limited.
 """
             submit_user_message(lab_question)
             st.rerun()
+
+    if st.session_state.get("last_error"):
+        st.error(
+            "Sorry, I could not get an answer just now. Please try again. "
+            f"Details: {st.session_state.last_error}"
+        )
 
     st.markdown(
         """
