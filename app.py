@@ -1123,6 +1123,12 @@ def logout_user():
     st.session_state.pending_prompt = None
 
 
+def _row_is_blocked(row):
+    """True when this saved row has no paid access and today's free questions are used up."""
+    paid = row.get("paid_until") and str(row["paid_until"]) >= _today()
+    return (not paid) and row.get("used_date") == _today() and int(row.get("used_count") or 0) >= FREE_LIMIT
+
+
 def current_user():
     """Return the signed-in member as a dict, or None."""
     if not AUTH_ENABLED:
@@ -1131,7 +1137,9 @@ def current_user():
     if not email:
         return None
     row = st.session_state.get("user_row")
-    if row is None or time.time() - st.session_state.get("user_checked", 0) > 60:
+    stale = time.time() - st.session_state.get("user_checked", 0) > 60
+    # A locked member is re-checked on every click, so paid access starts immediately.
+    if row is None or stale or _row_is_blocked(row):
         try:
             fresh = db_get_user(email)
         except RuntimeError:
@@ -1412,6 +1420,7 @@ def show_paywall():
         f"**Want unlimited access?** {PAYMENT_DETAILS}\n\n"
         f"Your account email: **{USER['email']}**"
     )
+    st.button("🔄 I have paid — refresh my access", key="refresh_access")
 
 
 # Sign-in / sign-up screen: nothing else is shown until the visitor is signed in.
