@@ -1,3 +1,4 @@
+import base64
 import csv
 import datetime
 import hashlib
@@ -11,6 +12,7 @@ import urllib.parse
 
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 from groq import Groq
 
 # =========================================================
@@ -850,6 +852,15 @@ st.markdown(
         margin-top: 10px;
     }
 
+    /* The invisible "stay signed in" script takes no space. */
+    [data-testid="stHtml"]:has(script) {
+        height: 0 !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+    }
+
     /* Remove the Fork / GitHub / Deploy toolbar and the menu. */
     [data-testid="stToolbar"],
     [data-testid="stToolbarActions"],
@@ -1257,10 +1268,95 @@ def _parse_time(value):
         return None
 
 
+# ---------- "stay signed in" cookie ----------
+SESSION_COOKIE = "mlt_session"
+SESSION_DAYS = 30
+
+
+def _session_key():
+    # Derived from the server-side database key, so no extra secret is needed.
+    return hashlib.sha256(("mlt-session|" + SUPABASE_KEY).encode("utf-8")).digest()
+
+
+def _sign(payload, password_hash):
+    message = f"{payload}|{password_hash}".encode("utf-8")
+    return hmac.new(_session_key(), message, hashlib.sha256).hexdigest()
+
+
+def make_session_token(row):
+    """Signed token: email + expiry + signature (tied to the current password)."""
+    expires = int(time.time()) + SESSION_DAYS * 86400
+    email_part = base64.urlsafe_b64encode(row["email"].encode("utf-8")).decode("ascii").rstrip("=")
+    payload = f"{email_part}.{expires}"
+    return f"{payload}.{_sign(payload, row.get('password_hash', ''))}"
+
+
+def read_session_token(token):
+    """Return the member's database row if the token is genuine and not expired."""
+    try:
+        email_part, expires, signature = str(token).split(".")
+        if int(expires) < time.time():
+            return None
+        email = base64.urlsafe_b64decode(email_part + "=" * (-len(email_part) % 4)).decode("utf-8")
+        row = db_get_user(email)
+        if not row:
+            return None
+        expected = _sign(f"{email_part}.{expires}", row.get("password_hash", ""))
+        return row if hmac.compare_digest(signature, expected) else None
+    except (ValueError, RuntimeError, TypeError, UnicodeDecodeError):
+        return None
+
+
+def run_js(js):
+    """Run a small script in the browser (new Streamlit: st.html, older: hidden iframe)."""
+    try:
+        st.html(f"<script>{js}</script>", unsafe_allow_javascript=True)
+    except TypeError:
+        parent_js = js.replace("document.cookie", "window.parent.document.cookie").replace(
+            "location.protocol", "window.parent.location.protocol"
+        )
+        components.html(f"<script>{parent_js}</script>", height=0)
+
+
+def sync_cookie():
+    """Save the sign-in cookie after login, and remove it after logout."""
+    token = st.session_state.get("session_cookie")
+    clear = st.session_state.pop("clear_cookie", False)
+    secure = '+(location.protocol==="https:"?"; Secure":"")'
+    if token:
+        run_js(
+            f'(function(){{try{{document.cookie="{SESSION_COOKIE}={token}; path=/; '
+            f'max-age={SESSION_DAYS * 86400}; SameSite=Lax"{secure};}}catch(e){{}}}})();'
+        )
+    elif clear:
+        run_js(
+            f'(function(){{try{{document.cookie="{SESSION_COOKIE}=; path=/; max-age=0; '
+            f'SameSite=Lax"{secure};}}catch(e){{}}}})();'
+        )
+
+
+def restore_login():
+    """After a page refresh, sign the member back in from the cookie (once per visit)."""
+    if st.session_state.get("cookie_checked") or st.session_state.get("auth_email"):
+        return
+    st.session_state.cookie_checked = True
+    try:
+        token = st.context.cookies.get(SESSION_COOKIE)
+    except Exception:
+        token = None
+    if not token:
+        return
+    row = read_session_token(token)
+    if row:
+        _start_session(row)
+
+
 def _start_session(row):
     st.session_state.auth_email = row["email"]
     st.session_state.user_row = row
     st.session_state.user_checked = time.time()
+    st.session_state.session_cookie = make_session_token(row)
+    st.session_state.cookie_checked = True
 
 
 def sign_up(name, email, password, confirm):
@@ -1319,8 +1415,10 @@ def sign_in(email, password):
 
 
 def logout_user():
-    for key in ("auth_email", "user_row", "user_checked"):
+    for key in ("auth_email", "user_row", "user_checked", "session_cookie"):
         st.session_state.pop(key, None)
+    st.session_state.clear_cookie = True
+    st.session_state.cookie_checked = True
     st.session_state.messages = []
     st.session_state.pending_prompt = None
 
@@ -1585,7 +1683,11 @@ def render_admin_dashboard():
         )
 
 
+if AUTH_ENABLED:
+    restore_login()
 USER = current_user()
+if AUTH_ENABLED:
+    sync_cookie()
 IS_ADMIN = bool(USER and USER["email"] in email_list("ADMIN_EMAILS"))
 IS_PAID = (not LIMITS_ACTIVE) or IS_ADMIN or bool(
     USER
