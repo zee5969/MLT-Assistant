@@ -2762,17 +2762,3 @@ else:
         """,
         unsafe_allow_html=True,
     )
-
-# =========================================================
-# FOOTER
-# =========================================================
-st.markdown(
-    """
-    <div class="footer">
-        MLT Medical AI Assistant · Created by Zeeshan Ali · Built for learning
-        <br>
-        Educational information only — not a substitute for professional medical care.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
