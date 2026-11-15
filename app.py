@@ -653,6 +653,180 @@ st.markdown(
         color: #0B6B8A !important;
     }
 
+    /* =====================================================
+       PROFESSIONAL POLISH
+       ===================================================== */
+    html, .stApp { color-scheme: light; }
+
+    /* Input fields: soft blue-grey box, dark navy text, teal focus ring. */
+    [data-baseweb="input"],
+    [data-baseweb="textarea"],
+    [data-testid="stSelectbox"] [data-baseweb="select"] > div {
+        background: #EEF4F8 !important;
+        background-color: #EEF4F8 !important;
+        border: 1px solid #B8C7D3 !important;
+        border-radius: 11px !important;
+        box-shadow: none !important;
+    }
+    [data-baseweb="base-input"] {
+        background: transparent !important;
+        background-color: transparent !important;
+        border: 0 !important;
+    }
+    .stTextInput input, .stTextArea textarea, .stNumberInput input {
+        background: transparent !important;
+        color: #10243A !important;
+        -webkit-text-fill-color: #10243A !important;
+        caret-color: #0D9488 !important;
+    }
+    .stTextInput input::placeholder, .stTextArea textarea::placeholder {
+        color: #6B7C8C !important;
+        -webkit-text-fill-color: #6B7C8C !important;
+        opacity: 1 !important;
+    }
+    [data-baseweb="input"]:focus-within,
+    [data-baseweb="textarea"]:focus-within,
+    [data-testid="stSelectbox"] [data-baseweb="select"]:focus-within > div {
+        background: #FFFFFF !important;
+        border-color: #0D9488 !important;
+        box-shadow: 0 0 0 3px rgba(13,148,136,.18) !important;
+    }
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus {
+        -webkit-box-shadow: 0 0 0 1000px #EEF4F8 inset !important;
+        -webkit-text-fill-color: #10243A !important;
+        caret-color: #0D9488 !important;
+    }
+
+    /* Forms and bordered panels become clean white cards. */
+    [data-testid="stForm"] {
+        background: #FFFFFF !important;
+        border: 1px solid #D8E1E8 !important;
+        border-radius: 18px !important;
+        padding: 24px 24px 18px 24px !important;
+        box-shadow: 0 8px 26px rgba(16,36,58,.07) !important;
+    }
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        background: #FFFFFF !important;
+        border-color: #D8E1E8 !important;
+        border-radius: 16px !important;
+        box-shadow: 0 4px 14px rgba(16,36,58,.045) !important;
+    }
+    button[role="tab"] {
+        padding: 10px 20px !important;
+    }
+
+    /* Chat: member messages get a soft teal tint. */
+    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
+        background: #EAF6F4 !important;
+        border-color: #CDE7E3 !important;
+    }
+    .feedback-label {
+        color: #526273 !important;
+        font-size: 12px;
+        margin: 10px 0 2px 2px;
+    }
+
+    /* Sidebar account card. */
+    .account-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 0 4px 0;
+    }
+    .account-card .avatar {
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #18A999, #176B87);
+        color: #FFFFFF !important;
+        font-weight: 800;
+        font-size: 17px;
+    }
+    .account-card .account-name {
+        color: #FFFFFF !important;
+        font-weight: 700;
+        font-size: 15px;
+        line-height: 1.2;
+    }
+    .account-card .account-email {
+        color: #C6D4E0 !important;
+        font-size: 12px;
+        max-width: 170px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .plan-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: 8px 0 7px 0;
+    }
+    .plan-row .plan-note {
+        color: #C6D4E0 !important;
+        font-size: 12px;
+    }
+    .plan-row .badge-admin { background: #1D4F7C; color: #D6E9FA !important; }
+    .plan-row .badge-paid { background: #14594A; color: #CFF5E8 !important; }
+    .plan-row .badge-free { background: #2B3E52; color: #D6E0EA !important; }
+    .usage-bar {
+        height: 6px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.18);
+        overflow: hidden;
+        margin-bottom: 12px;
+    }
+    .usage-bar .usage-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #18A999, #5ED6C4);
+    }
+
+    /* Free-limit message. */
+    .paywall {
+        background: #FFF8E9;
+        border: 1px solid #EAD39D;
+        border-left: 5px solid #D99A1B;
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin: 6px 0 12px 0;
+    }
+    .paywall .paywall-title {
+        color: #634713 !important;
+        font-family: 'Manrope', sans-serif;
+        font-weight: 800;
+        font-size: 17px;
+        margin-bottom: 6px;
+    }
+    .paywall .paywall-text {
+        color: #634713 !important;
+        font-size: 14px;
+        line-height: 1.6;
+        margin-bottom: 10px;
+    }
+    .paywall .paywall-box {
+        background: #FFFFFF;
+        border: 1px solid #EAD39D;
+        border-radius: 10px;
+        padding: 12px 14px;
+        color: #3F2E0B !important;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+    .paywall .paywall-box strong { color: #3F2E0B !important; }
+    .paywall .paywall-email {
+        color: #7A5B1E !important;
+        font-size: 12px;
+        margin-top: 10px;
+    }
+
     /* Remove the Fork / GitHub / Deploy toolbar and the menu. */
     [data-testid="stToolbar"],
     [data-testid="stToolbarActions"],
@@ -888,6 +1062,7 @@ def on_thumb(index):
 
 def render_feedback(index):
     """Show thumbs under an answer, plus an optional reason after thumbs down."""
+    st.markdown('<div class="feedback-label">Was this answer helpful?</div>', unsafe_allow_html=True)
     selection = st.feedback(
         "thumbs",
         key=f"fb_{index}",
@@ -1317,7 +1492,7 @@ def render_admin_dashboard():
         st.markdown("#### Manage a member")
         emails = [m["email"] for m in members]
         left, right = st.columns(2)
-        with left:
+        with left.container(border=True):
             st.markdown("**Paid access**")
             chosen = st.selectbox("Member", emails, key="admin_member")
             days = st.number_input("Paid days", min_value=1, max_value=365, value=30, step=1, key="admin_days")
@@ -1328,7 +1503,7 @@ def render_admin_dashboard():
             if b2.button("Remove paid access", key="admin_revoke_btn", use_container_width=True):
                 st.session_state.admin_notice = admin_revoke(chosen)
                 st.rerun()
-        with right:
+        with right.container(border=True):
             st.markdown("**Reset password**")
             chosen_reset = st.selectbox("Member for password reset", emails, key="admin_member_reset")
             new_password = st.text_input("New password (at least 8 characters)", type="password", key="admin_new_password")
@@ -1414,11 +1589,16 @@ def render_hero():
 
 
 def show_paywall():
-    st.warning(
-        f"You have used your {FREE_LIMIT} free questions for today. "
-        "They reset every day at 5:00 AM Pakistan time.\n\n"
-        f"**Want unlimited access?** {PAYMENT_DETAILS}\n\n"
-        f"Your account email: **{USER['email']}**"
+    details = html.escape(str(PAYMENT_DETAILS)).replace("\n", "<br>")
+    st.markdown(
+        '<div class="paywall">'
+        '<div class="paywall-title">Daily free limit reached</div>'
+        f'<div class="paywall-text">You have used your {FREE_LIMIT} free questions for today. '
+        "They reset every day at 5:00 AM Pakistan time.</div>"
+        f'<div class="paywall-box"><strong>Want unlimited access?</strong><br>{details}</div>'
+        f'<div class="paywall-email">Your account email: <strong>{html.escape(USER["email"])}</strong></div>'
+        "</div>",
+        unsafe_allow_html=True,
     )
     st.button("🔄 I have paid — refresh my access", key="refresh_access")
 
@@ -1426,47 +1606,49 @@ def show_paywall():
 # Sign-in / sign-up screen: nothing else is shown until the visitor is signed in.
 if AUTH_ENABLED and USER is None:
     render_hero()
-    st.markdown('<div class="section-heading">Welcome</div>', unsafe_allow_html=True)
-    st.markdown(
-        f'<div class="section-subtitle">Sign in or create a free account to start learning. '
-        f'Free accounts get {FREE_LIMIT} questions per day.</div>',
-        unsafe_allow_html=True,
-    )
-    tab_in, tab_up = st.tabs(["Sign in", "Create account"])
-    with tab_in:
-        with st.form("signin_form"):
-            si_email = st.text_input("Email", key="si_email")
-            si_password = st.text_input("Password", type="password", key="si_password")
-            si_submit = st.form_submit_button("Sign in", type="primary", use_container_width=True)
-        if si_submit:
-            ok, message = sign_in(si_email, si_password)
-            if ok:
-                st.rerun()
-            else:
-                st.error(message)
-    with tab_up:
-        with st.form("signup_form"):
-            su_name = st.text_input("Your name", key="su_name")
-            su_email = st.text_input("Email", key="su_email")
-            su_password = st.text_input("Password (at least 8 characters)", type="password", key="su_password")
-            su_confirm = st.text_input("Confirm password", type="password", key="su_confirm")
-            su_submit = st.form_submit_button("Create free account", type="primary", use_container_width=True)
-        if su_submit:
-            ok, message = sign_up(su_name, su_email, su_password, su_confirm)
-            if ok:
-                st.rerun()
-            else:
-                st.error(message)
-    st.markdown(
-        """
-        <div class="disclaimer">
-            <strong>Educational use only:</strong> this assistant supports MLT learning.
-            It does not diagnose, prescribe, or replace a qualified healthcare professional.
-            Only your name, email and a securely hashed password are stored.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    _, center, _ = st.columns([1, 1.7, 1])
+    with center:
+        st.markdown('<div class="section-heading">Welcome</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="section-subtitle">Sign in to your account, or create a free one in seconds. '
+            f'Free accounts include {FREE_LIMIT} questions per day.</div>',
+            unsafe_allow_html=True,
+        )
+        tab_in, tab_up = st.tabs(["Sign in", "Create account"])
+        with tab_in:
+            with st.form("signin_form"):
+                si_email = st.text_input("Email", key="si_email", placeholder="you@example.com")
+                si_password = st.text_input("Password", type="password", key="si_password")
+                si_submit = st.form_submit_button("Sign in", type="primary", use_container_width=True)
+            if si_submit:
+                ok, message = sign_in(si_email, si_password)
+                if ok:
+                    st.rerun()
+                else:
+                    st.error(message)
+        with tab_up:
+            with st.form("signup_form"):
+                su_name = st.text_input("Your name", key="su_name")
+                su_email = st.text_input("Email", key="su_email", placeholder="you@example.com")
+                su_password = st.text_input("Password (at least 8 characters)", type="password", key="su_password")
+                su_confirm = st.text_input("Confirm password", type="password", key="su_confirm")
+                su_submit = st.form_submit_button("Create free account", type="primary", use_container_width=True)
+            if su_submit:
+                ok, message = sign_up(su_name, su_email, su_password, su_confirm)
+                if ok:
+                    st.rerun()
+                else:
+                    st.error(message)
+        st.markdown(
+            """
+            <div class="disclaimer">
+                <strong>Educational use only:</strong> this assistant supports MLT learning.
+                It does not diagnose, prescribe, or replace a qualified healthcare professional.
+                Only your name, email and a securely hashed password are stored.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     st.stop()
 
 
@@ -1500,15 +1682,29 @@ with st.sidebar:
     st.caption("AI & Healthcare Technology Enthusiast")
     st.markdown("---")
     if USER:
-        st.markdown(f"**{USER['name'] or USER['email']}**")
-        st.caption(USER["email"])
+        display_name = USER["name"] or USER["email"].split("@")[0]
         if IS_ADMIN:
-            st.caption("Admin · unlimited access")
+            plan_key, plan_label, plan_note, usage_bar = "admin", "Admin", "Unlimited access", ""
         elif IS_PAID:
-            st.caption("Paid member · unlimited access")
+            plan_key, plan_label, plan_note, usage_bar = "paid", "Paid member", "Unlimited access", ""
         else:
             left = max(FREE_LIMIT - get_usage(USER), 0)
-            st.caption(f"Free plan · {left} of {FREE_LIMIT} questions left today")
+            percent = int(100 * left / max(FREE_LIMIT, 1))
+            plan_key, plan_label = "free", "Free plan"
+            plan_note = f"{left} of {FREE_LIMIT} questions left today"
+            usage_bar = f'<div class="usage-bar"><div class="usage-fill" style="width:{percent}%"></div></div>'
+        st.markdown(
+            '<div class="account-card">'
+            f'<div class="avatar">{html.escape(display_name[:1].upper())}</div>'
+            '<div class="account-meta">'
+            f'<div class="account-name">{html.escape(display_name)}</div>'
+            f'<div class="account-email">{html.escape(USER["email"])}</div>'
+            "</div></div>"
+            f'<div class="plan-row"><span class="badge badge-{plan_key}">{plan_label}</span>'
+            f'<span class="plan-note">{plan_note}</span></div>'
+            f"{usage_bar}",
+            unsafe_allow_html=True,
+        )
         st.button("Log out", on_click=logout_user, use_container_width=True)
         st.markdown("---")
     if st.button("🗑️ Clear conversation", use_container_width=True):
