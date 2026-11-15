@@ -1900,10 +1900,11 @@ def _paywall_card_html():
     details = html.escape(str(PAYMENT_DETAILS)).replace("\n", "<br>")
     features = [
         ("♾️", "Unlimited questions every day"),
-        ("🤖", "Access to the OpenAI model"),
         ("📝", "Notes, MCQs and viva practice without limits"),
         ("⚡", "Faster help from the developer"),
     ]
+    if get_secret("OPENAI_API_KEY"):
+        features.insert(1, ("🤖", "Access to the OpenAI model"))
     feature_html = "".join(
         f'<div class="um-feature"><span class="um-icon">{icon}</span>'
         f'<span class="um-text">{html.escape(text)}</span></div>'
@@ -2110,7 +2111,7 @@ if page == "AI Assistant":
             )
     with metric_cols[2]:
         st.markdown('<div class="provider-label">AI PROVIDER</div>', unsafe_allow_html=True)
-        provider_names = list(PROVIDERS.keys()) if IS_PAID else ["Groq"]
+        provider_names = ["Groq"] + (["OpenAI"] if (IS_PAID and get_secret("OPENAI_API_KEY")) else [])
         if st.session_state.provider not in provider_names:
             st.session_state.provider = provider_names[0]
         selected_provider = st.selectbox(
